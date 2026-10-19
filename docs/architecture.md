@@ -1,14 +1,14 @@
 # Architecture and Repository Layout
 
-This guide describes the intended architecture and distinguishes it from what is currently present. At this stage, the repository contains the README, project specifications, project skills under `.github/skills/`, and repository ignore rules; application modules, API contracts, database assets, tests, CI workflows, and local infrastructure have not yet been implemented. This document and the development guide are the initial files under `docs/`.
+This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend now contain independently runnable starter scaffolds. Collection features, BFF-to-backend communication, database assets, module test suites, CI workflows, and local infrastructure have not yet been implemented.
 
 ## Repository layout
 
 | Location | Purpose | Status |
 | --- | --- | --- |
-| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Planned |
-| `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Planned |
-| `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Planned |
+| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Minimal Vite/React scaffold present; collection UI planned |
+| `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Minimal Express health response present; API and backend client planned |
+| `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Minimal Spring Boot/Actuator scaffold present; domain API and persistence planned |
 | `contracts/` | OpenAPI contract and examples, if selected as a maintained contract location | Planned; source-of-truth workflow is undecided |
 | `database/` | Flyway migrations and reproducible seed or demo data | Planned |
 | Tests in `frontend/`, `bff/`, and `backend/` | Unit and component tests for their owning modules; backend and BFF integration tests belong with the relevant module | Planned with the modules |
@@ -28,7 +28,7 @@ There is no central `tests/` directory defined. Keep tests with the module or sc
 
 ## System architecture
 
-The diagram shows the intended request path and API contract relationship; it does not represent implemented or running services.
+The diagram shows the intended request path and API contract relationship. The current scaffolds start independently and do not yet communicate with each other or a database.
 
 ```mermaid
 flowchart TD

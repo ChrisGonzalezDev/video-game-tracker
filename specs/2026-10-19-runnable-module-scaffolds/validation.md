@@ -23,13 +23,23 @@
 
 Run the following checks from each module directory after implementing the corresponding configuration:
 
-- **Frontend:** install dependencies with `npm install`, run the documented development command (the README currently proposes `npm run dev`), and run the configured build command (expected to be documented as `npm run build` if that script is provided).
-- **BFF:** install dependencies with `npm install`, run the documented development command (the README currently proposes `npm run dev`), and run the configured build command.
-- **Backend:** run the Maven Wrapper build (`./mvnw package`; on Windows, `mvnw.cmd package`) and start the application using the documented command (`./mvnw spring-boot:run`; on Windows, `mvnw.cmd spring-boot:run`).
+- **Frontend:** from `frontend/`, run `npm install`, `npm run build`, and `npm run dev`; verify the page at `http://localhost:3000`.
+- **BFF:** from `bff/`, run `npm install`, `npm run build`, and `npm run dev`; verify `http://localhost:3001/health` returns `{"status":"ok"}`.
+- **Backend:** from `backend/`, run `./mvnw package` and `./mvnw spring-boot:run`; on Windows, use `mvnw.cmd package` and `mvnw.cmd spring-boot:run`. Verify `http://localhost:8080/actuator/health` reports `UP`.
 - For each module, observe its page, response, or readiness signal while the other application modules are stopped and, for the backend, while PostgreSQL is unavailable.
 
 Use the exact commands checked into or documented by each module if implementation selects a different script name or build lifecycle. These are proposed checks, not results; do not report them as passed unless actually run.
 
 ## Completion and merge readiness
 
-The phase is complete when all three module configurations provide their documented build and development/start entry points; each module starts independently with the required observable signal; all module builds pass; the setup documentation matches the implementation; and the unresolved frontend-tool and JDK-baseline decisions have been recorded. The change is ready to merge when these criteria are verified and no Phase 0.3 database or later integration work has been pulled into scope.
+The phase is complete when all three module configurations provide their documented build and development/start entry points; each module starts independently with the required observable signal; all module builds pass; the setup documentation matches the implementation; and the frontend-tool and JDK-baseline decisions are recorded.
+
+## Verification record
+
+- **Frontend:** `npm install`, clean `npm ci`, and `npm run build` passed. `npm run dev` returned HTTP 200 at `http://localhost:3000/`, and the page rendered its scaffold title and running status in the browser with the BFF stopped. This independence check was repeated.
+- **BFF:** `npm install`, clean `npm ci`, and `npm run build` passed. Both `npm run dev` and `npm start` returned HTTP 200 from `http://localhost:3001/health` with `{"status":"ok"}` while the backend was stopped. The independence check was repeated with the backend stopped.
+- **Backend wrapper:** `mvnw.cmd -v` successfully ran Maven 3.9.11 with JDK 21.0.2.
+- **Backend build/start:** With `JAVA_HOME` and `PATH` set for `C:\Users\Chris\AppData\Local\mise\installs\java\21.0.2`, `mvnw.cmd package` passed. `mvnw.cmd spring-boot:run` started Spring Boot, and its health endpoint returned `{"status":"UP"}` from `http://localhost:8080/actuator/health` without PostgreSQL or the other application modules. After the readiness check, the validation session stopped the long-running server; the runner reported exit code `-1` during that stop. Startup and readiness passed; graceful shutdown was not an acceptance criterion.
+- **Dependency audit:** npm reported zero vulnerabilities in each module.
+
+All module builds and independent startup/readiness checks passed.

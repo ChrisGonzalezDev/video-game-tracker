@@ -35,6 +35,9 @@ Provide contributors with runnable starting points for the frontend, BFF, and ba
 
 - The modules use the technology choices in `specs/tech-stack.md`: React and TypeScript for the frontend, Node.js and Express for the BFF, and Java and Spring Boot for the backend.
 - Follow the README's proposed JavaScript package-manager convention of npm and backend build convention of Maven Wrapper.
+- Use Vite as the frontend development server and production build tool.
+- Require Node.js 22.12 or newer for the frontend and BFF toolchain.
+- Target Java 17 with Spring Boot 3.5 for the backend; pin the exact Spring Boot patch release in `backend/pom.xml`.
 - Each module must have its own build and development/start entry points, and its documented development command must work without the other application modules.
 - Keep the architecture boundaries from `specs/tech-stack.md`: browser presentation belongs to the SPA, frontend-facing HTTP handling belongs to the BFF, and application rules and persistence access belong to the backend.
 - The scaffolds remain minimal and do not introduce database or cross-module dependencies.
@@ -42,7 +45,7 @@ Provide contributors with runnable starting points for the frontend, BFF, and ba
 ## Assumptions
 
 - The repository's existing `frontend/`, `bff/`, and `backend/` layout is the intended module structure.
-- The README's currently proposed run commands are starting guidance; document final commands only after they exist in the module configuration.
+- Document the module commands and local URLs only after confirming them against the checked-in configurations; reserve proposed setup examples for later roadmap capabilities.
 - A minimal page, response, or readiness signal is sufficient evidence that a module has started; the scaffolds do not need to implement application behavior.
 
 ## Dependencies and relevant context
@@ -50,13 +53,10 @@ Provide contributors with runnable starting points for the frontend, BFF, and ba
 - `specs/mission.md` defines the personal collection product and its guiding principle that future AI suggestions remain subject to user review.
 - `specs/tech-stack.md` defines the layer technologies and architectural boundaries.
 - `specs/roadmap.md` defines the outcome and completion check for Phase 0.2; Phase 0.3 separately covers local database and configuration.
-- `docs/architecture.md` identifies `frontend/`, `bff/`, and `backend/` as planned module locations.
-- `docs/development.md` says module-specific commands and exact versions are established with each module's build configuration.
-- The README proposes npm commands for the frontend and BFF, Maven Wrapper for the backend, and ports 3000, 3001, and 8080. These are proposed until confirmed by the implemented configuration.
+- `docs/architecture.md` identifies `frontend/`, `bff/`, and `backend/` as the module locations and distinguishes the starter scaffolds from planned capabilities.
+- `docs/development.md` and the README document module prerequisites, commands, ports, and readiness URLs that match each build configuration.
+- The frontend and BFF use the README's npm convention; the backend uses the checked-in Maven Wrapper.
 
 ## Unresolved questions
 
-- Which frontend development/build tool should be used with React and TypeScript?
-- Which JDK baseline should the backend build configuration target?
-
-Resolve these choices while establishing the module build configurations. Record the resulting runtime and tool requirements alongside the module commands; do not assume a version that is not established by the project.
+None. The frontend tool and JDK baseline are resolved in the confirmed decisions above.

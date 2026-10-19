@@ -1,6 +1,6 @@
 # Development Workflow
 
-The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The technologies and test scopes below describe the confirmed target stack; do not assume a planned module, command, or check is already available.
+The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. Collection behavior and module test suites remain planned.
 
 ## Feature workflow
 
@@ -13,6 +13,22 @@ The repository is being built incrementally. Follow this feature-oriented workfl
 7. **Open a pull request.** Summarize the user-visible change, implementation boundaries, contract or migration impact, tests and checks actually run, and any remaining limitations. Link the issue where applicable and keep the diff focused.
 8. **Check merge readiness.** Review the implementation and confirm that required checks pass. Merge only after configured required checks pass; if no checks are configured yet, do not imply that CI verification occurred.
 
+## Running the starter modules
+
+Install Node.js 22.12 or newer, npm, and JDK 17 or newer (the backend targets Java 17). Maven is provided by the checked-in wrapper; a separate Maven installation is not required. Each module can be started without running the other modules or PostgreSQL.
+
+### Frontend
+
+From `frontend/`, run `npm install`, `npm run dev`, and `npm run build`. The starter page is served at `http://localhost:3000`.
+
+### BFF
+
+From `bff/`, run `npm install`, `npm run dev`, and `npm run build`. The standalone health response is available at `http://localhost:3001/health` and returns `{"status":"ok"}`. For the compiled production entry point, run `npm start` after `npm run build`.
+
+### Backend
+
+From `backend/`, build with `./mvnw package` and start with `./mvnw spring-boot:run`. On Windows, use `mvnw.cmd package` and `mvnw.cmd spring-boot:run`. The Spring Boot Actuator health endpoint is `http://localhost:8080/actuator/health`; it does not require PostgreSQL. The build requires JDK 17.
+
 ## Cross-cutting conventions
 
 - Keep the React SPA, Express BFF, Spring Boot API, and PostgreSQL responsibilities separate.
@@ -23,4 +39,4 @@ The repository is being built incrementally. Follow this feature-oriented workfl
 - Keep AI-generated metadata optional and subject to user review and confirmation before saving.
 - Prefer accessible, responsive behavior and consistent validation and error handling.
 
-The repository's available modules, local setup, and verification commands will grow with the roadmap. Until then, treat examples elsewhere in the README as proposed guidance unless the corresponding files and configuration exist.
+The frontend, BFF, and backend scaffold commands documented above are runnable. Treat later database, integration, Docker Compose, and CI examples in the README as planned until their corresponding files and configuration exist.

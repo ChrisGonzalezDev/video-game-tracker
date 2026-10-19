@@ -9,7 +9,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Repository structure, module boundaries, and feature-oriented development conventions are documented.
 - **Completion check:** The repository has a clear location for the frontend, BFF, backend, API contracts, database assets, tests, and architecture documentation.
 
-### 0.2 Create runnable module scaffolds
+### 0.2 Create runnable module scaffolds [Complete]
 
 - **Outcome:** Frontend, BFF, and backend modules have build and development entry points.
 - **Completion check:** Each module's documented development command starts that module without requiring the other application modules.

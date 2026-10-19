@@ -4,7 +4,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 
 ## Phase 0 — Foundation
 
-### 0.1 Establish repository conventions
+### 0.1 Establish repository conventions [Complete]
 
 - **Outcome:** Repository structure, module boundaries, and feature-oriented development conventions are documented.
 - **Completion check:** The repository has a clear location for the frontend, BFF, backend, API contracts, database assets, tests, and architecture documentation.

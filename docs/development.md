@@ -1,6 +1,6 @@
 # Development Workflow
 
-The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. Collection behavior and module test suites remain planned.
+The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; collection behavior and module test suites remain planned.
 
 ## Feature workflow
 
@@ -15,7 +15,55 @@ The repository is being built incrementally. Follow this feature-oriented workfl
 
 ## Running the starter modules
 
-Install Node.js 22.12 or newer, npm, and JDK 17 or newer (the backend targets Java 17). Maven is provided by the checked-in wrapper; a separate Maven installation is not required. Each module can be started without running the other modules or PostgreSQL.
+Install Node.js 22.12 or newer, npm, and JDK 17 or newer (the backend targets Java 17). Maven is provided by the checked-in wrapper; a separate Maven installation is not required. Docker Engine or Docker Desktop with the Compose plugin is required only for the optional local database. Each application module can still be started without the other modules or PostgreSQL.
+
+### Local PostgreSQL database
+
+The root `compose.yaml` starts PostgreSQL only; it does not start the frontend, BFF, or backend. It uses the pinned `postgres:17.6-alpine` image, publishes port `5432`, and stores data in the named `postgres-data` volume. This is the Phase 0.3 development database setup, not the planned Phase 4.2 full-stack Compose environment.
+
+From the repository root, create the ignored local environment file and replace the username and password placeholders with values for local development:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+The file defines `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT`. Compose requires the database name, username, and password to be set; it fails with a clear error if any is missing. Do not commit `.env` or use these local credentials in production.
+
+Start the database, then check that Compose reports it healthy:
+
+```powershell
+docker compose up -d --wait postgres
+docker compose ps
+```
+
+The service health check uses `pg_isready`. To run a client bundled in the PostgreSQL container:
+
+```powershell
+docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+For a `psql` client installed on the host, connect to host `localhost`, port `5432`, database `video_game_tracker`, and the username and password from `.env`:
+
+```powershell
+psql -h localhost -p 5432 -U <local-username> -d video_game_tracker
+```
+
+The password is requested by `psql`. The same settings configure the backend's opt-in `local` Spring profile. To run the backend from PowerShell, load the simple key/value `.env` entries into the current process and enable that profile:
+
+```powershell
+Get-Content .env | ForEach-Object {
+    if ($_ -match '^(?<name>[^#=]+)=(?<value>.*)$') {
+        Set-Item -Path "Env:$($matches.name)" -Value $matches.value
+    }
+}
+$env:SPRING_PROFILES_ACTIVE = "local"
+Set-Location backend
+.\mvnw.cmd spring-boot:run
+```
+
+When `local` is not active, the backend does not configure or require a datasource and can start with PostgreSQL stopped. Stop PostgreSQL normally with `docker compose down`; this preserves `postgres-data`. **Removing the volume permanently deletes all local database data:** only use `docker compose down --volumes` when that data can be discarded.
+
+The environment variables, Compose setup, and backend datasource properties are local development settings, not production configuration.
 
 ### Frontend
 
@@ -33,10 +81,10 @@ From `backend/`, build with `./mvnw package` and start with `./mvnw spring-boot:
 
 - Keep the React SPA, Express BFF, Spring Boot API, and PostgreSQL responsibilities separate.
 - Keep API paths explicitly versioned; the planned backend API uses `/api/v1`.
-- Keep credentials and secrets out of source control; use environment-based configuration when the relevant module or local environment is implemented.
+- Keep credentials and secrets out of source control; use the ignored `.env` file for the local PostgreSQL service and environment-based configuration for the opt-in backend datasource.
 - Use Flyway for version-controlled database schema changes.
 - Treat Docker Compose as a local development and demonstration environment, not a production deployment configuration.
 - Keep AI-generated metadata optional and subject to user review and confirmation before saving.
 - Prefer accessible, responsive behavior and consistent validation and error handling.
 
-The frontend, BFF, and backend scaffold commands documented above are runnable. Treat later database, integration, Docker Compose, and CI examples in the README as planned until their corresponding files and configuration exist.
+The frontend, BFF, and backend scaffold commands documented above are runnable. The database-only Compose setup and backend `local` profile are implemented. Treat the full-stack Compose environment, integration tests, and CI examples in the README as planned until their corresponding files and configuration exist.

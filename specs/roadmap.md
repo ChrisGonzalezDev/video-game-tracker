@@ -14,7 +14,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Frontend, BFF, and backend modules have build and development entry points.
 - **Completion check:** Each module's documented development command starts that module without requiring the other application modules.
 
-### 0.3 Provide a local database and configuration baseline
+### 0.3 Provide a local database and configuration baseline [Complete]
 
 - **Outcome:** PostgreSQL and environment-based local configuration are available for development.
 - **Completion check:** A developer can configure the database without committing secrets, and the local database can be started using the documented setup.

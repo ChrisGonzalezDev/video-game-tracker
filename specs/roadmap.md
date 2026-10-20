@@ -21,7 +21,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 
 ## Phase 1 — Backend and persistence
 
-### 1.1 Define the game and console domain
+### 1.1 Define the game and console domain [Complete]
 
 - **Outcome:** Game details and supported consoles have explicit domain models and validation rules.
 - **Completion check:** Unit tests cover required fields, supported values, and the game-to-console relationship.

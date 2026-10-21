@@ -80,9 +80,14 @@ public class GameRepository {
 
     @Transactional(readOnly = true)
     public Optional<Game> findById(long id) {
+        return findPersistedById(id).map(PersistedGame::game);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PersistedGame> findPersistedById(long id) {
         List<GameRow> rows = jdbcTemplate.query(
                 """
-                        SELECT g.title, g.original_release_year, g.esrb_rating,
+                        SELECT g.id, g.title, g.original_release_year, g.esrb_rating,
                                g.max_local_multiplayer_players, g.cover_image_url,
                                g.personal_comments, c.name AS console_name
                         FROM games g
@@ -91,6 +96,7 @@ public class GameRepository {
                         WHERE g.id = ?
                         """,
                 (resultSet, rowNumber) -> new GameRow(
+                        resultSet.getLong("id"),
                         resultSet.getString("title"),
                         resultSet.getInt("original_release_year"),
                         resultSet.getString("esrb_rating"),
@@ -107,17 +113,20 @@ public class GameRepository {
         GameRow first = rows.get(0);
         Set<Console> consoles = new HashSet<>();
         rows.forEach(row -> consoles.add(row.console()));
-        return Optional.of(new Game(
-                first.title(),
-                Year.of(first.originalReleaseYear()),
-                consoles,
-                first.esrbRating() == null ? null : EsrbRating.fromValue(first.esrbRating()),
-                first.maxLocalMultiplayerPlayers(),
-                first.coverImageUrl() == null ? null : URI.create(first.coverImageUrl()),
-                first.personalComments()));
+        return Optional.of(new PersistedGame(
+                first.id(),
+                new Game(
+                        first.title(),
+                        Year.of(first.originalReleaseYear()),
+                        consoles,
+                        first.esrbRating() == null ? null : EsrbRating.fromValue(first.esrbRating()),
+                        first.maxLocalMultiplayerPlayers(),
+                        first.coverImageUrl() == null ? null : URI.create(first.coverImageUrl()),
+                        first.personalComments())));
     }
 
     private record GameRow(
+            long id,
             String title,
             int originalReleaseYear,
             String esrbRating,

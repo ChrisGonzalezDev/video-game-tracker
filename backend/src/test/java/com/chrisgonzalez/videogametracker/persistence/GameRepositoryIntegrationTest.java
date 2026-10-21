@@ -10,6 +10,7 @@ import com.chrisgonzalez.videogametracker.domain.EsrbRating;
 import com.chrisgonzalez.videogametracker.domain.Game;
 import java.net.URI;
 import java.time.Year;
+import java.util.Comparator;
 import java.util.Set;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,9 +63,11 @@ class GameRepositoryIntegrationTest {
     @Test
     void appliesMigrationsToCleanDatabaseAndSeedsReleasedConsolesFromGenerationsTwoToNine() {
         assertEquals(2, flyway.info().applied().length);
-        assertEquals(96, consoleRepository.findAll().size());
-        assertTrue(consoleRepository.findAll().contains(new Console("Nintendo Entertainment System")));
-        assertTrue(consoleRepository.findAll().contains(new Console("Nintendo Switch")));
+        var consoles = consoleRepository.findAll();
+        assertEquals(96, consoles.size());
+        assertEquals(consoles.stream().sorted(Comparator.comparing(Console::name)).toList(), consoles);
+        assertTrue(consoles.contains(new Console("Nintendo Entertainment System")));
+        assertTrue(consoles.contains(new Console("Nintendo Switch")));
     }
 
     @Test
@@ -83,6 +86,7 @@ class GameRepositoryIntegrationTest {
         long id = gameRepository.save(game);
 
         assertEquals(game, gameRepository.findById(id).orElseThrow());
+        assertEquals(new PersistedGame(id, game), gameRepository.findPersistedById(id).orElseThrow());
     }
 
     @Test

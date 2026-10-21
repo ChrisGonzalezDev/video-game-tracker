@@ -33,6 +33,7 @@ public class GameRepository {
             throw new IllegalArgumentException("A game must be associated with at least one console");
         }
 
+        List<Long> consoleIds = findConsoleIds(game);
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(
@@ -62,20 +63,54 @@ public class GameRepository {
         }
 
         long gameId = key.longValue();
-        for (Console console : game.consoles()) {
-            List<Long> consoleIds = jdbcTemplate.query(
-                    "SELECT id FROM consoles WHERE name = ?",
-                    (resultSet, rowNumber) -> resultSet.getLong(1),
-                    console.name());
-            if (consoleIds.isEmpty()) {
-                throw new IllegalArgumentException("Unsupported console: " + console.name());
-            }
+        for (Long consoleId : consoleIds) {
             jdbcTemplate.update(
                     "INSERT INTO game_consoles (game_id, console_id) VALUES (?, ?)",
                     gameId,
-                    consoleIds.get(0));
+                    consoleId);
         }
         return gameId;
+    }
+
+    @Transactional
+    public boolean replace(long id, Game game) {
+        Objects.requireNonNull(game, "Game must not be null");
+        if (game.consoles().isEmpty()) {
+            throw new IllegalArgumentException("A game must be associated with at least one console");
+        }
+
+        List<Long> consoleIds = findConsoleIds(game);
+        int updatedRows = jdbcTemplate.update(
+                """
+                        UPDATE games
+                        SET title = ?, original_release_year = ?, esrb_rating = ?,
+                            max_local_multiplayer_players = ?, cover_image_url = ?, personal_comments = ?
+                        WHERE id = ?
+                        """,
+                game.title(),
+                game.originalReleaseYear().getValue(),
+                game.esrbRating() == null ? null : game.esrbRating().value(),
+                game.maxLocalMultiplayerPlayers(),
+                game.coverImageUrl() == null ? null : game.coverImageUrl().toString(),
+                game.personalComments(),
+                id);
+        if (updatedRows == 0) {
+            return false;
+        }
+
+        jdbcTemplate.update("DELETE FROM game_consoles WHERE game_id = ?", id);
+        for (Long consoleId : consoleIds) {
+            jdbcTemplate.update(
+                    "INSERT INTO game_consoles (game_id, console_id) VALUES (?, ?)",
+                    id,
+                    consoleId);
+        }
+        return true;
+    }
+
+    @Transactional
+    public boolean deleteById(long id) {
+        return jdbcTemplate.update("DELETE FROM games WHERE id = ?", id) > 0;
     }
 
     @Transactional(readOnly = true)
@@ -123,6 +158,21 @@ public class GameRepository {
                         first.maxLocalMultiplayerPlayers(),
                         first.coverImageUrl() == null ? null : URI.create(first.coverImageUrl()),
                         first.personalComments())));
+    }
+
+    private List<Long> findConsoleIds(Game game) {
+        return game.consoles().stream()
+                .map(console -> {
+                    List<Long> consoleIds = jdbcTemplate.query(
+                            "SELECT id FROM consoles WHERE name = ?",
+                            (resultSet, rowNumber) -> resultSet.getLong(1),
+                            console.name());
+                    if (consoleIds.isEmpty()) {
+                        throw new IllegalArgumentException("Unsupported console: " + console.name());
+                    }
+                    return consoleIds.get(0);
+                })
+                .toList();
     }
 
     private record GameRow(

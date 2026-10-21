@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -19,6 +20,11 @@ public class ApiExceptionHandler {
                 "INVALID_REQUEST",
                 "Request contains invalid values.",
                 List.of(new ApiError.ApiErrorDetail(exception.field(), exception.getMessage()))));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableRequest(HttpMessageNotReadableException exception) {
+        return handleInvalidRequest(new InvalidRequestException("body", "must contain valid game JSON"));
     }
 
     @ExceptionHandler(GameNotFoundException.class)

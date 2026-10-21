@@ -107,6 +107,111 @@ class GameRepositoryIntegrationTest {
     }
 
     @Test
+    void replacesAllGameFieldsAndConsoleAssociations() {
+        Console initialConsole = new Console("Nintendo Switch");
+        Console replacementConsole = new Console("Sony PlayStation 5");
+        long id = gameRepository.save(new Game(
+                "Original Game",
+                Year.of(2018),
+                Set.of(initialConsole),
+                EsrbRating.E,
+                2,
+                URI.create("https://example.com/original.jpg"),
+                "Original note."));
+        Game replacement = new Game(
+                "Updated Game",
+                Year.of(2022),
+                Set.of(replacementConsole),
+                null,
+                null,
+                null,
+                null);
+
+        assertTrue(gameRepository.replace(id, replacement));
+
+        assertEquals(replacement, gameRepository.findById(id).orElseThrow());
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM game_consoles WHERE game_id = ?",
+                Integer.class,
+                id));
+        assertEquals(
+                replacementConsole.name(),
+                jdbcTemplate.queryForObject(
+                        """
+                                SELECT c.name
+                                FROM game_consoles gc JOIN consoles c ON c.id = gc.console_id
+                                WHERE gc.game_id = ?
+                                """,
+                        String.class,
+                        id));
+    }
+
+    @Test
+    void rejectsUnsupportedReplacementWithoutChangingPersistedGame() {
+        Game original = new Game(
+                "Original Game",
+                Year.of(2018),
+                Set.of(new Console("Nintendo Switch")),
+                null,
+                null,
+                null,
+                null);
+        long id = gameRepository.save(original);
+        Game replacement = new Game(
+                "Invalid Replacement",
+                Year.of(2022),
+                Set.of(new Console("Unseeded Console")),
+                null,
+                null,
+                null,
+                null);
+
+        assertThrows(IllegalArgumentException.class, () -> gameRepository.replace(id, replacement));
+
+        assertEquals(original, gameRepository.findById(id).orElseThrow());
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM game_consoles WHERE game_id = ?",
+                Integer.class,
+                id));
+    }
+
+    @Test
+    void returnsFalseWhenReplacingGameThatDoesNotExist() {
+        assertFalse(gameRepository.replace(123L, new Game(
+                "Example Game",
+                Year.of(2020),
+                Set.of(new Console("Nintendo Switch")),
+                null,
+                null,
+                null,
+                null)));
+    }
+
+    @Test
+    void deletesGameAndCascadesItsConsoleAssociations() {
+        long id = gameRepository.save(new Game(
+                "Example Game",
+                Year.of(2020),
+                Set.of(new Console("Nintendo Switch")),
+                null,
+                null,
+                null,
+                null));
+
+        assertTrue(gameRepository.deleteById(id));
+        assertTrue(gameRepository.findById(id).isEmpty());
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM game_consoles WHERE game_id = ?",
+                Integer.class,
+                id));
+    }
+
+    @Test
+    void returnsFalseWhenDeletingGameThatDoesNotExist() {
+        assertFalse(gameRepository.deleteById(123L));
+    }
+
+    @Test
     void returnsEmptyWhenGameDoesNotExist() {
         assertTrue(gameRepository.findById(123L).isEmpty());
     }

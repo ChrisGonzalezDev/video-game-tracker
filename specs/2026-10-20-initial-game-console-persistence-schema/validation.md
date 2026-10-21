@@ -4,7 +4,7 @@
 
 - A clean PostgreSQL database can be initialized by the backend's Flyway migrations without manual schema creation.
 - The schema contains relational storage for games, supported consoles, and game-console associations, with foreign keys and uniqueness rules that prevent dangling or duplicate relationships.
-- The seeded console catalog contains exactly the names confirmed before implementation; no unapproved console values are introduced.
+- The migration seeds the 96 released console platforms from generations 2 through 9 in the user-confirmed source scope, with regional aliases represented once and source attribution included.
 - A persisted game can be read back with its title, original release year, optional ESRB rating, optional maximum local multiplayer player count, optional cover image URL, personal comments, and all associated consoles preserved.
 - Required game data is enforced, optional fields may be absent, and persistence rejects games with no console association.
 - Invalid or orphaned console associations cannot be persisted.
@@ -29,7 +29,7 @@ The implementation must also demonstrate migration against a clean PostgreSQL da
 
 ## Merge-readiness conditions
 
-- The supported-console catalog values are explicitly confirmed and the seed migration uses only those values.
+- The supported-console catalog follows the user-confirmed generations 2–9 scope and contains exactly 96 entries.
 - All migrations apply to a clean PostgreSQL database.
 - Focused tests cover persisted game fields, game-console association round trips, and relational integrity, including invalid or missing associations.
 - The backend Maven build and focused PostgreSQL-backed tests pass.

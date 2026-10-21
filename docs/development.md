@@ -1,6 +1,6 @@
 # Development Workflow
 
-The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; collection behavior and module test suites remain planned.
+The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; the initial game/console schema and persistence layer are present, while API and UI collection behavior remain planned.
 
 ## Feature workflow
 
@@ -48,7 +48,7 @@ For a `psql` client installed on the host, connect to host `localhost`, port `54
 psql -h localhost -p 5432 -U <local-username> -d video_game_tracker
 ```
 
-The password is requested by `psql`. The same settings configure the backend's opt-in `local` Spring profile. To run the backend from PowerShell, load the simple key/value `.env` entries into the current process and enable that profile:
+The password is requested by `psql`. The same settings configure the backend's opt-in `local` Spring profile. When the backend starts with that profile, Flyway applies the schema and seeds 96 released console platforms from generations 2 through 9. The seed migration documents its Wikipedia source and license attribution. To run the backend from PowerShell, load the simple key/value `.env` entries into the current process and enable that profile:
 
 ```powershell
 Get-Content .env | ForEach-Object {
@@ -77,6 +77,8 @@ From `bff/`, run `npm install`, `npm run dev`, and `npm run build`. The standalo
 
 From `backend/`, build with `./mvnw package` and start with `./mvnw spring-boot:run`. On Windows, use `mvnw.cmd package` and `mvnw.cmd spring-boot:run`. The Spring Boot Actuator health endpoint is `http://localhost:8080/actuator/health`; it does not require PostgreSQL. The build requires JDK 17.
 
+The PostgreSQL migration and persistence integration test uses Testcontainers and requires Docker. Run it from `backend/` with `.\mvnw.cmd -Dtest=GameRepositoryIntegrationTest test`. It creates a disposable PostgreSQL 17.6 container and applies the Flyway migration to a clean database.
+
 ## Cross-cutting conventions
 
 - Keep the React SPA, Express BFF, Spring Boot API, and PostgreSQL responsibilities separate.
@@ -87,4 +89,4 @@ From `backend/`, build with `./mvnw package` and start with `./mvnw spring-boot:
 - Keep AI-generated metadata optional and subject to user review and confirmation before saving.
 - Prefer accessible, responsive behavior and consistent validation and error handling.
 
-The frontend, BFF, and backend scaffold commands documented above are runnable. The database-only Compose setup and backend `local` profile are implemented. Treat the full-stack Compose environment, integration tests, and CI examples in the README as planned until their corresponding files and configuration exist.
+The frontend, BFF, and backend scaffold commands documented above are runnable. The database-only Compose setup, backend `local` profile, and PostgreSQL persistence integration tests are implemented. Treat the full-stack Compose environment, end-to-end tests, and CI examples in the README as planned until their corresponding files and configuration exist.

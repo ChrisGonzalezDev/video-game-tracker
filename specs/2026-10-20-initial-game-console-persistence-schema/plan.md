@@ -7,15 +7,15 @@
 ## Task groups
 
 1. **Resolve the console catalog and persistence test setup**
-   - Confirm the exact supported-console names before writing catalog seed data.
-   - Select a reproducible PostgreSQL-backed test mechanism compatible with the backend's Maven configuration.
-   - **Completion check:** Catalog values and the test-database approach are recorded in the implementation change; no unsupported values are assumed.
+   - Use the user-confirmed scope: released home console platforms from generations 2 through 9 in the linked source, excluding unreleased systems and regional aliases as separate entries.
+   - Use PostgreSQL Testcontainers for reproducible integration tests.
+   - **Completion check:** The catalog scope and source attribution are recorded, and integration tests use a disposable PostgreSQL database.
 
 2. **Add Flyway migrations for the relational schema**
    - Add Flyway to the backend and create versioned migrations for games, consoles, and the game-console association.
    - Add keys, foreign keys, uniqueness, nullability, and domain-aligned constraints; avoid arbitrary text length limits.
-   - Add catalog seed data using only the values confirmed in Task Group 1.
-   - **Completion check:** All migrations apply in order to a clean PostgreSQL database, and the resulting schema and catalog match the confirmed model.
+   - Add catalog seed data using only released systems in the confirmed generations 2 through 9 scope, with source attribution.
+   - **Completion check:** All migrations apply in order to a clean PostgreSQL database and seed the 96-entry catalog in the confirmed scope.
 
 3. **Implement game persistence**
    - Map the existing domain fields to the schema and provide backend persistence operations for storing and retrieving games and their console associations.

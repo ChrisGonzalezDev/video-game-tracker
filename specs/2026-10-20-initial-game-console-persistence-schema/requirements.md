@@ -19,7 +19,7 @@ Provide version-controlled PostgreSQL storage for games, supported consoles, and
 - Add Flyway support to the Spring Boot backend and create versioned migrations for games, consoles, and their many-to-many association.
 - Represent the existing game details: title, original release year, optional ESRB rating, optional maximum local multiplayer players, optional cover image URL, and optional personal comments.
 - Add the persistence mapping and operations needed to store and retrieve games with their console associations.
-- Define and seed the supported-console catalog after its values are confirmed. Do not invent or silently choose console names.
+- Seed the supported-console catalog with released console platforms from generations 2 through 9 in the user-selected Wikipedia list. Do not include first-generation entries, unreleased systems, or hardware revisions; represent regional aliases as one platform name.
 - Add focused PostgreSQL-backed tests for clean-database migration, game persistence, console associations, and relational integrity.
 - Keep persistence in the backend; do not add HTTP endpoints or frontend behavior.
 
@@ -34,6 +34,9 @@ Provide version-controlled PostgreSQL storage for games, supported consoles, and
 ## Confirmed decisions
 
 - PostgreSQL is the relational database and Flyway owns versioned schema changes.
+- The supported-console catalog consists of the 96 released platform entries in generations 2 through 9 from [Wikipedia's list of home video game consoles](https://en.wikipedia.org/wiki/List_of_home_video_game_consoles). Regional aliases share one catalog entry. The seed migration attributes the adapted list under CC BY-SA 4.0.
+- Use Testcontainers with PostgreSQL 17.6 for reproducible PostgreSQL-backed integration tests.
+- Keep persistence as Spring JDBC repositories: `GameRepository` saves and retrieves a game by identifier, and `ConsoleRepository` lists supported consoles.
 - Games have a many-to-many relationship with consoles: each game has one or more consoles, and a console may be associated with multiple games.
 - Persist the fields already established by the domain model: title, original release year, console associations, optional ESRB rating, optional maximum local multiplayer players, optional HTTP(S) cover image URL, and optional personal comments.
 - Keep the implementation limited to schema and persistence; HTTP endpoints are out of scope.
@@ -53,11 +56,9 @@ Provide version-controlled PostgreSQL storage for games, supported consoles, and
 - `specs/tech-stack.md` assigns persistence access to Spring Boot, PostgreSQL for relational storage, and Flyway for migrations.
 - `specs/roadmap.md` requires migrations for games and consoles and tests that verify persistence and relational integrity.
 - `specs/2026-10-20-game-and-console-domain/requirements.md` defines the game's fields and domain validation. It explicitly deferred the concrete supported-console catalog to this phase, where persistence and seed data were expected to be defined.
-- The current backend uses Spring JDBC and includes PostgreSQL as a runtime dependency. It has domain records and unit tests but no Flyway dependency, migrations, or persistence implementation.
+- The backend uses Spring JDBC and PostgreSQL. The feature implementation adds Flyway migrations, JDBC repositories, and PostgreSQL-backed Testcontainers tests.
 - `specs/2026-10-20-local-postgresql-development-setup/requirements.md` establishes a local PostgreSQL development service and an opt-in backend `local` profile.
 
 ## Unresolved questions
 
-- **Supported-console catalog:** The supported console names and seed rows have not been provided. Confirm the exact names before implementing the catalog seed migration. Do not invent catalog values. This decision blocks completion of the schema-and-catalog phase until resolved.
-- **PostgreSQL-backed test mechanism:** Select a reproducible mechanism compatible with the existing Maven/backend setup during implementation; the user has not prescribed a particular test database tool.
-- **Persistence API shape:** The exact repository/DAO API and identifier mapping should follow existing backend patterns as they evolve; no HTTP or external API shape is being decided here.
+No product or architecture decisions remain unresolved for this feature.

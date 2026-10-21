@@ -26,7 +26,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Game details and supported consoles have explicit domain models and validation rules.
 - **Completion check:** Unit tests cover required fields, supported values, and the game-to-console relationship.
 
-### 1.2 Create the initial database schema
+### 1.2 Create the initial database schema [Complete]
 
 - **Outcome:** Flyway migrations create the relational tables and relationships for games and consoles.
 - **Completion check:** Migrations apply to a clean PostgreSQL database, and tests verify persistence and relational integrity.

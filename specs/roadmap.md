@@ -31,7 +31,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Flyway migrations create the relational tables and relationships for games and consoles.
 - **Completion check:** Migrations apply to a clean PostgreSQL database, and tests verify persistence and relational integrity.
 
-### 1.3 Define the versioned backend API contract
+### 1.3 Define the versioned backend API contract [Complete]
 
 - **Outcome:** The game and console API shapes, validation errors, and response behavior are documented in OpenAPI.
 - **Completion check:** Contract documentation covers the planned `/api/v1` endpoints and passes the project's selected validation workflow.

@@ -9,7 +9,7 @@ This guide describes the intended architecture and distinguishes it from what is
 | `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Minimal Vite/React scaffold present; collection UI planned |
 | `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Minimal Express health response present; API and backend client planned |
 | `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Spring Boot scaffold, game/console domain, initial Flyway schema, and persistence repositories present; API planned |
-| `contracts/` | OpenAPI contract and examples, if selected as a maintained contract location | Planned; source-of-truth workflow is undecided |
+| `contracts/` | Maintained OpenAPI contract, Redocly validation package, and contract usage documentation | OpenAPI 3.1 contract for planned backend API present; endpoint implementation remains planned |
 | `backend/src/main/resources/db/migration/` | Backend-owned Flyway schema migrations | Initial games, consoles, and game-console relationship migration plus 96 released-console seed entries present |
 | Tests in `frontend/`, `bff/`, and `backend/` | Unit and component tests for their owning modules; backend and BFF integration tests belong with the relevant module | Backend domain unit and PostgreSQL persistence/migration integration tests present; frontend and BFF suites planned |
 | `e2e/` | Playwright tests for critical workflows across the running application | Planned |
@@ -75,7 +75,7 @@ The BFF and backend are separate boundaries: frontend-specific request handling 
 
 ## Contracts, persistence, and tests
 
-OpenAPI documents the backend API request and response shapes and supports compatibility checks between the BFF and backend. The repository has not selected whether the contract will be maintained under `contracts/`, generated from the backend, or use both approaches. Keep contract updates aligned with API changes without presuming a generation workflow.
+OpenAPI documents the backend API request and response shapes and supports compatibility checks between the BFF and backend. The maintained OpenAPI 3.1 source of truth is `contracts/openapi.yaml`; validate changes with the documented command in `contracts/README.md`. The contract is not generated from the backend, and it documents planned behavior rather than implemented endpoints. Keep contract updates aligned with API changes.
 
 Flyway migrations under `backend/src/main/resources/db/migration/` version the backend-owned PostgreSQL schema. The initial migration creates games, consoles, and game-console associations; the next seeds released console platforms from generations 2 through 9. The adapted name list is attributed in the seed migration to Wikipedia contributors under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Local Docker Compose is intended for development and demonstration, not production deployment.
 

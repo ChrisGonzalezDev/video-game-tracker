@@ -1,0 +1,462 @@
+openapi: 3.1.0
+info:
+  title: Video Game Inventory Tracker API
+  version: 1.0.0
+  description: Versioned API for managing a personal video game collection.
+servers:
+  - url: /api/v1
+    description: Version 1 API
+security: []
+tags:
+  - name: Games
+    description: Search and manage games in the collection.
+  - name: Consoles
+    description: Supported console catalog.
+  - name: Health
+    description: Backend availability.
+paths:
+  /games:
+    get:
+      tags: [Games]
+      summary: Search the game collection
+      description: >-
+        All supplied filters are combined with AND. Repeated console values match
+        games associated with any of those consoles. Keyword matching is a
+        case-insensitive substring match in the title or personal comments.
+        Console names must exactly match catalog entries; an unknown filter value
+        produces no matches. Player-range filters are inclusive and exclude games
+        without a recorded local player count. If minPlayers exceeds maxPlayers,
+        the request is invalid. Results are ordered by the selected field and
+        direction, with ID ascending as a stable tie-breaker. Title ordering is
+        case-insensitive.
+      operationId: searchGames
+      parameters:
+        - name: keyword
+          in: query
+          description: Case-insensitive substring in the game title or personal comments.
+          schema:
+            type: string
+        - name: console
+          in: query
+          description: >-
+            Supported console name. Repeat this parameter to match a game on any
+            of the supplied consoles; console filtering combines with other
+            filters using AND.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ConsoleName'
+        - name: rating
+          in: query
+          description: Filter by exact ESRB rating.
+          schema:
+            $ref: '#/components/schemas/EsrbRating'
+        - name: minPlayers
+          in: query
+          description: Minimum recorded local multiplayer player count, inclusive.
+          schema:
+            type: integer
+            minimum: 1
+        - name: maxPlayers
+          in: query
+          description: Maximum recorded local multiplayer player count, inclusive.
+          schema:
+            type: integer
+            minimum: 1
+        - name: page
+          in: query
+          description: Zero-based page index. A page beyond the last page returns an empty items array.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          description: Number of items per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          description: Field used to order results.
+          schema:
+            type: string
+            enum: [title, originalReleaseYear]
+            default: title
+        - name: direction
+          in: query
+          description: Sort direction; game ID remains ascending as a tie-breaker.
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Page of matching games. An empty collection is returned as an empty items array.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Games]
+      summary: Add a game to the collection
+      description: >-
+        Creates a game. The title, original release year, and at least one
+        supported console are required. Optional fields omitted or explicitly
+        null are stored as null. Console names must exactly match supported
+        catalog entries; an unknown console is invalid.
+      operationId: createGame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameWrite'
+      responses:
+        '201':
+          description: Game created.
+          headers:
+            Location:
+              description: URI of the created game resource.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /games/{id}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    get:
+      tags: [Games]
+      summary: Retrieve a game
+      operationId: getGame
+      responses:
+        '200':
+          description: Game found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '404':
+          $ref: '#/components/responses/GameNotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [Games]
+      summary: Replace a game
+      description: >-
+        Replaces the complete game representation. Title, original release year,
+        and at least one supported console are required. Omitted or explicitly
+        null optional fields are cleared to null. Console names must exactly
+        match supported catalog entries; an unknown console is invalid.
+      operationId: replaceGame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameWrite'
+      responses:
+        '200':
+          description: Game replaced.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/GameNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Games]
+      summary: Remove a game
+      operationId: deleteGame
+      responses:
+        '204':
+          description: Game deleted; response has no body.
+        '404':
+          $ref: '#/components/responses/GameNotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /consoles:
+    get:
+      tags: [Consoles]
+      summary: List supported consoles
+      description: Returns the supported console catalog ordered by name ascending.
+      operationId: listConsoles
+      responses:
+        '200':
+          description: Supported consoles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Console'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /health:
+    get:
+      tags: [Health]
+      summary: Check backend health
+      operationId: checkHealth
+      responses:
+        '200':
+          description: Backend is available.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: ok
+        '503':
+          description: Backend is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthUnavailable'
+              example:
+                status: unavailable
+components:
+  parameters:
+    GameId:
+      name: id
+      in: path
+      required: true
+      description: Positive game identifier.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+  schemas:
+    Game:
+      type: object
+      additionalProperties: false
+      required: [id, title, originalReleaseYear, consoles]
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          readOnly: true
+        title:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+          description: Required nonblank game title.
+        originalReleaseYear:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+          description: Four-digit original release year; it must not be in the future.
+        consoles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: At least one supported console; each name must exactly match the catalog.
+          items:
+            $ref: '#/components/schemas/Console'
+        esrbRating:
+          oneOf:
+            - $ref: '#/components/schemas/EsrbRating'
+            - type: 'null'
+          description: ESRB rating, or null when unknown.
+        maxLocalMultiplayerPlayers:
+          type:
+            - integer
+            - 'null'
+          minimum: 1
+          description: Positive maximum local player count, or null when unknown.
+        coverImageUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          description: Absolute HTTP or HTTPS cover image URL, or null when absent.
+        personalComments:
+          type:
+            - string
+            - 'null'
+          description: Collector's personal comments, or null when absent.
+    GameWrite:
+      type: object
+      additionalProperties: false
+      required: [title, originalReleaseYear, consoles]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+          description: Required nonblank game title.
+        originalReleaseYear:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+          description: Four-digit original release year; it must not be in the future.
+        consoles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: At least one supported console; each name must exactly match the catalog.
+          items:
+            $ref: '#/components/schemas/Console'
+        esrbRating:
+          oneOf:
+            - $ref: '#/components/schemas/EsrbRating'
+            - type: 'null'
+          description: ESRB rating, or null when unknown.
+        maxLocalMultiplayerPlayers:
+          type:
+            - integer
+            - 'null'
+          minimum: 1
+          description: Positive maximum local player count, or null when unknown.
+        coverImageUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          description: Absolute HTTP or HTTPS cover image URL, or null when absent.
+        personalComments:
+          type:
+            - string
+            - 'null'
+          description: Collector's personal comments, or null when absent.
+    GamePage:
+      type: object
+      additionalProperties: false
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Game'
+        page:
+          type: integer
+          minimum: 0
+          description: Zero-based index of this page.
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Requested page size.
+        totalItems:
+          type: integer
+          minimum: 0
+          description: Total matching games before pagination.
+        totalPages:
+          type: integer
+          minimum: 0
+          description: Ceiling of totalItems divided by size; zero when totalItems is zero.
+    Console:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          $ref: '#/components/schemas/ConsoleName'
+    ConsoleName:
+      type: string
+      minLength: 1
+      pattern: '.*\S.*'
+      description: Exact nonblank name from the supported console catalog.
+    EsrbRating:
+      type: string
+      enum: [EC, E, E10+, T, M, AO, RP]
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+          enum: [INVALID_REQUEST, GAME_NOT_FOUND, INTERNAL_SERVER_ERROR]
+          description: Stable machine-readable error code.
+        message:
+          type: string
+          description: Human-readable summary of the error.
+        details:
+          type: array
+          description: Field-level errors; empty when no individual field is implicated.
+          items:
+            $ref: '#/components/schemas/ApiErrorDetail'
+    ApiErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          description: Request field or parameter associated with the error.
+        message:
+          type: string
+          description: Human-readable explanation of the field error.
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
+    HealthUnavailable:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: unavailable
+  responses:
+    BadRequest:
+      description: Request is malformed or contains invalid values.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: INVALID_REQUEST
+            message: Request contains invalid values.
+            details:
+              - field: title
+                message: must not be blank
+    GameNotFound:
+      description: No game exists with the specified identifier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: GAME_NOT_FOUND
+            message: Game with the specified identifier was not found.
+            details: []
+    InternalServerError:
+      description: An unexpected server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: INTERNAL_SERVER_ERROR
+            message: An unexpected error occurred.
+            details: []

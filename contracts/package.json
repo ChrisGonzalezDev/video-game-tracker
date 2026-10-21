@@ -1,0 +1,14 @@
+{
+  "name": "video-game-tracker-api-contract",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "validate": "redocly lint openapi.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.67.1"
+  }
+}

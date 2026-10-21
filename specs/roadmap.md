@@ -36,7 +36,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** The game and console API shapes, validation errors, and response behavior are documented in OpenAPI.
 - **Completion check:** Contract documentation covers the planned `/api/v1` endpoints and passes the project's selected validation workflow.
 
-### 1.4 Implement game and console read endpoints
+### 1.4 Implement game and console read endpoints [Complete]
 
 - **Outcome:** Clients can retrieve a game and the supported console list.
 - **Completion check:** Backend tests verify successful reads and the expected not-found behavior.

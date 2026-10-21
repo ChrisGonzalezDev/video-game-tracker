@@ -41,7 +41,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Clients can retrieve a game and the supported console list.
 - **Completion check:** Backend tests verify successful reads and the expected not-found behavior.
 
-### 1.5 Implement game create, update, and delete
+### 1.5 Implement game create, update, and delete [Complete]
 
 - **Outcome:** Clients can create, edit, and delete games with server-side validation.
 - **Completion check:** Backend tests cover valid operations, invalid input, and consistent error responses.

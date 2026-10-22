@@ -53,7 +53,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 
 ## Phase 2 — Frontend
 
-### 2.1 Build the application shell and collection view
+### 2.1 Build the application shell and collection view [Complete]
 
 - **Outcome:** Users can open the SPA and browse a collection view backed by the agreed API shapes.
 - **Completion check:** Frontend tests cover the main collection view and loading, empty, and error states.

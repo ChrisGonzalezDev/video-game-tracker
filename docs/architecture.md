@@ -1,17 +1,17 @@
 # Architecture and Repository Layout
 
-This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend contain independently runnable starter scaffolds. A database-only local PostgreSQL Compose service is available, and the backend can opt into its datasource with the `local` Spring profile. The backend now has an initial Flyway schema, a 96-console catalog seed, and game persistence repositories; the collection API/UI, BFF integration, CI workflows, and full-stack local environment remain planned.
+This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend run independently. The frontend now has an accessible collection view backed by deterministic local fixtures; live BFF integration remains planned. A database-only local PostgreSQL Compose service is available, and the backend can opt into its datasource with the `local` Spring profile. The backend has an initial Flyway schema, a 96-console catalog seed, game persistence repositories, and the versioned collection API.
 
 ## Repository layout
 
 | Location | Purpose | Status |
 | --- | --- | --- |
-| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Minimal Vite/React scaffold present; collection UI planned |
+| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Responsive MUI collection view with typed fixture data and Jest/MSW tests present; forms, search controls, and live BFF integration remain planned |
 | `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Minimal Express health response present; API and backend client planned |
-| `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Spring Boot scaffold, game/console domain, initial Flyway schema, and persistence repositories present; API planned |
-| `contracts/` | Maintained OpenAPI contract, Redocly validation package, and contract usage documentation | OpenAPI 3.1 contract for planned backend API present; endpoint implementation remains planned |
+| `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Spring Boot game/console domain, versioned CRUD/search API, Flyway schema, and persistence repositories present |
+| `contracts/` | Maintained OpenAPI contract, Redocly validation package, and contract usage documentation | OpenAPI 3.1 contract for the versioned backend API and Redocly validation workflow present |
 | `backend/src/main/resources/db/migration/` | Backend-owned Flyway schema migrations | Initial games, consoles, and game-console relationship migration plus 96 released-console seed entries present |
-| Tests in `frontend/`, `bff/`, and `backend/` | Unit and component tests for their owning modules; backend and BFF integration tests belong with the relevant module | Backend domain unit and PostgreSQL persistence/migration integration tests present; frontend and BFF suites planned |
+| Tests in `frontend/`, `bff/`, and `backend/` | Unit and component tests for their owning modules; backend and BFF integration tests belong with the relevant module | Frontend collection component tests and backend domain unit/PostgreSQL persistence-migration integration tests present; BFF suites planned |
 | `e2e/` | Playwright tests for critical workflows across the running application | Planned |
 | `docs/architecture.md` | This guide to module purpose, boundaries, and request flow | Present |
 | `docs/development.md` | Contributor workflow and verification conventions | Present |
@@ -28,7 +28,7 @@ There is no central `tests/` directory defined. Keep tests with the module or sc
 
 ## System architecture
 
-The diagram shows the intended request path and API contract relationship. The current application scaffolds start independently and do not yet communicate with each other. PostgreSQL can be started separately for local development; the backend connects to it only when the `local` Spring profile is enabled.
+The diagram shows the intended request path and API contract relationship. The frontend collection view currently uses a local fixture-backed data source, and the independently runnable BFF and backend do not yet communicate with the frontend. PostgreSQL can be started separately for local development; the backend connects to it only when the `local` Spring profile is enabled.
 
 ```mermaid
 flowchart TD
@@ -75,7 +75,7 @@ The BFF and backend are separate boundaries: frontend-specific request handling 
 
 ## Contracts, persistence, and tests
 
-OpenAPI documents the backend API request and response shapes and supports compatibility checks between the BFF and backend. The maintained OpenAPI 3.1 source of truth is `contracts/openapi.yaml`; validate changes with the documented command in `contracts/README.md`. The contract is not generated from the backend, and it documents planned behavior rather than implemented endpoints. Keep contract updates aligned with API changes.
+OpenAPI documents the backend API request and response shapes and supports compatibility checks between the BFF and backend. The maintained OpenAPI 3.1 source of truth is `contracts/openapi.yaml`; validate changes with the documented command in `contracts/README.md`. The contract is maintained separately from the backend implementation. Keep contract updates aligned with API changes.
 
 Flyway migrations under `backend/src/main/resources/db/migration/` version the backend-owned PostgreSQL schema. The initial migration creates games, consoles, and game-console associations; the next seeds released console platforms from generations 2 through 9. The adapted name list is attributed in the seed migration to Wikipedia contributors under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Local Docker Compose is intended for development and demonstration, not production deployment.
 

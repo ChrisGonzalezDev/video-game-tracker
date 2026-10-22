@@ -2,12 +2,11 @@
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #f3f4f6;
-  background: #10141c;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #10141c;
 }
 
 * {
@@ -20,62 +19,232 @@ body {
   margin: 0;
 }
 
-.page {
-  display: grid;
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-shell {
   min-height: 100vh;
-  padding: 2rem;
+  background:
+    radial-gradient(ellipse at 86% 0%, #1e2b40 0, transparent 28rem),
+    #10141c;
+}
+
+.app-header {
+  border-bottom: 1px solid #293241;
+  background: #10141cdd;
+}
+
+.app-header__inner {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: #f3f4f6;
+  font-size: 0.98rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.brand:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid #9fb8ff;
+  outline-offset: 4px;
+}
+
+.brand__mark {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.65rem;
+  background: #829ff0;
+  color: #10141c;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
   place-items: center;
 }
 
-.welcome {
-  width: min(100%, 42rem);
-  padding: clamp(2rem, 7vw, 4.5rem);
-  border: 1px solid #293241;
-  border-radius: 1.5rem;
-  background:
-    radial-gradient(ellipse at 85% 0%, #26334a 0, transparent 44%),
-    #171d28;
-  box-shadow: 0 2rem 6rem #0005;
+.header-label {
+  color: #9aa5b5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.page-content {
+  padding-top: clamp(2.5rem, 7vw, 5.5rem);
+  padding-bottom: 4rem;
+}
+
+.page-intro {
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
 }
 
 .eyebrow {
-  margin: 0 0 1rem;
+  margin: 0 0 0.8rem;
   color: #9fb8ff;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 
-h1 {
-  max-width: 12ch;
-  margin: 0;
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
+.page-title.MuiTypography-root {
+  max-width: 14ch;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 750;
   letter-spacing: -0.055em;
-  line-height: 1.02;
+  line-height: 1.05;
 }
 
-.description {
-  max-width: 34rem;
-  margin: 1.5rem 0 2rem;
-  color: #b6bfce;
-  font-size: 1.1rem;
-  line-height: 1.65;
+.page-description.MuiTypography-root {
+  max-width: 38rem;
+  margin-top: 0.9rem;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
-.status {
-  display: inline-flex;
-  align-items: center;
+.collection-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+}
+
+.game-card.MuiCard-root {
+  overflow: hidden;
+  border-color: #293241;
+  background: #171d28;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.game-card.MuiCard-root:hover {
+  transform: translateY(-2px);
+  border-color: #50617e;
+  box-shadow: 0 1rem 2.5rem #0003;
+}
+
+.game-card__cover {
+  width: 100%;
+  height: 10rem;
+  object-fit: cover;
+}
+
+.game-card__cover--placeholder {
+  display: grid;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 70% 30%, #758ec04d 0 1px, transparent 2px),
+    radial-gradient(ellipse at 50% 115%, #41567b 0, transparent 65%),
+    linear-gradient(140deg, #222e43, #171d28 75%);
+  place-items: center;
+}
+
+.game-card__cover-mark {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 1px solid #9fb8ff66;
+  border-radius: 1.1rem;
+  color: #bdcafa;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  place-items: center;
+  transform: rotate(-8deg);
+}
+
+.game-card__content.MuiCardContent-root {
+  display: flex;
+  min-height: 9rem;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.6rem;
-  color: #d1fae5;
-  font-size: 0.9rem;
-  font-weight: 600;
 }
 
-.status-dot {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 0 0.25rem #34d39922;
+.game-card__content.MuiCardContent-root:last-child {
+  padding-bottom: 1.25rem;
+}
+
+.game-card__title.MuiTypography-root {
+  font-size: 1.08rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.game-card__consoles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.collection-state {
+  display: flex;
+  min-height: 14rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.collection-state--empty {
+  padding: 2rem 1rem;
+  border: 1px dashed #3a4659;
+  border-radius: 1rem;
+  background: #171d2866;
+}
+
+.empty-mark {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 1px solid #3a4659;
+  border-radius: 1rem;
+  color: #9fb8ff;
+  font-size: 2rem;
+  place-items: center;
+}
+
+.collection-error {
+  align-items: center;
+}
+
+@media (max-width: 480px) {
+  .header-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.07em;
+  }
+
+  .collection-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

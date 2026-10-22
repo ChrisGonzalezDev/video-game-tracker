@@ -1,6 +1,6 @@
 # Development Workflow
 
-The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; the initial game/console schema and persistence layer are present, while API and UI collection behavior remain planned.
+The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; the backend has game and console CRUD plus collection search, while frontend and BFF collection behavior remain planned.
 
 ## Feature workflow
 

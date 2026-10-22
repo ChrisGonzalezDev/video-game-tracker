@@ -15,6 +15,8 @@ export interface Game {
   personalComments?: string | null;
 }
 
+export type GameWrite = Omit<Game, "id">;
+
 export interface GamePage {
   items: Game[];
   page: number;

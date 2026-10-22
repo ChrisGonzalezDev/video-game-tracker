@@ -58,7 +58,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Users can open the SPA and browse a collection view backed by the agreed API shapes.
 - **Completion check:** Frontend tests cover the main collection view and loading, empty, and error states.
 
-### 2.2 Add game details and collection forms
+### 2.2 Add game details and collection forms [Complete]
 
 - **Outcome:** Users can view a game's details and enter or edit game information.
 - **Completion check:** Tests verify form validation and the user flows for viewing, creating, and editing a game.

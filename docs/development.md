@@ -67,7 +67,7 @@ The environment variables, Compose setup, and backend datasource properties are 
 
 ### Frontend
 
-From `frontend/`, run `npm install`, `npm run dev`, and `npm run build`. The starter page is served at `http://localhost:3000`.
+From `frontend/`, run `npm install` and `npm run dev` to open the collection view at `http://localhost:3000`. The current collection is deterministic fixture data; it does not make live requests to the BFF or backend. Run `npm run build` to verify the production bundle and `npm test` to run the frontend Jest component tests.
 
 ### BFF
 
@@ -82,7 +82,7 @@ The PostgreSQL migration and persistence integration test uses Testcontainers an
 ## Cross-cutting conventions
 
 - Keep the React SPA, Express BFF, Spring Boot API, and PostgreSQL responsibilities separate.
-- Keep API paths explicitly versioned; the planned backend API uses `/api/v1`.
+- Keep API paths explicitly versioned; the backend API uses `/api/v1`.
 - Keep credentials and secrets out of source control; use the ignored `.env` file for the local PostgreSQL service and environment-based configuration for the opt-in backend datasource.
 - Use Flyway for version-controlled database schema changes.
 - Treat Docker Compose as a local development and demonstration environment, not a production deployment configuration.

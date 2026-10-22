@@ -63,7 +63,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Users can view a game's details and enter or edit game information.
 - **Completion check:** Tests verify form validation and the user flows for viewing, creating, and editing a game.
 
-### 2.3 Add collection search and filters
+### 2.3 Add collection search and filters [Complete]
 
 - **Outcome:** Users can search and filter games by the supported collection fields.
 - **Completion check:** Tests verify search/filter interactions, combined criteria, sorting, and pagination controls.

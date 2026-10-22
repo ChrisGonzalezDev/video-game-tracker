@@ -1,7 +1,21 @@
 import type { Console, Game, GamePage, GameWrite } from "./types";
 
+export type CollectionSortField = "title" | "originalReleaseYear";
+export type CollectionSortDirection = "asc" | "desc";
+
+export interface CollectionQuery {
+  keyword?: string;
+  consoles?: string[];
+  rating?: NonNullable<Game["esrbRating"]>;
+  minPlayers?: number;
+  maxPlayers?: number;
+  sort?: CollectionSortField;
+  direction?: CollectionSortDirection;
+  page?: number;
+}
+
 export interface CollectionDataSource {
-  getCollection(): Promise<GamePage>;
+  getCollection(query?: CollectionQuery): Promise<GamePage>;
   getGame(id: number): Promise<Game | undefined>;
   getConsoles(): Promise<Console[]>;
   createGame(game: GameWrite): Promise<Game>;
@@ -85,7 +99,90 @@ export function createFixtureCollectionDataSource(
   let nextId = collection.items.reduce((maximum, game) => Math.max(maximum, game.id), 0) + 1;
 
   return {
-    getCollection: async () => copyCollection(collection),
+    getCollection: async (query = {}) => {
+      for (const [field, value] of [
+        ["minPlayers", query.minPlayers],
+        ["maxPlayers", query.maxPlayers],
+      ] as const) {
+        if (value != null && (!Number.isInteger(value) || value < 1)) {
+          throw new RangeError(`${field} must be a positive whole number.`);
+        }
+      }
+      if (
+        query.minPlayers != null &&
+        query.maxPlayers != null &&
+        query.minPlayers > query.maxPlayers
+      ) {
+        throw new RangeError("minPlayers cannot exceed maxPlayers.");
+      }
+      if (
+        query.page != null &&
+        (!Number.isInteger(query.page) || query.page < 0)
+      ) {
+        throw new RangeError("page must be a non-negative whole number.");
+      }
+
+      const keyword = query.keyword?.trim().toLowerCase();
+      const selectedConsoles = new Set(query.consoles ?? []);
+      const filtered = collection.items.filter((game) => {
+        if (
+          keyword &&
+          !game.title.toLowerCase().includes(keyword) &&
+          !(game.personalComments ?? "").toLowerCase().includes(keyword)
+        ) {
+          return false;
+        }
+
+        if (
+          selectedConsoles.size > 0 &&
+          !game.consoles.some((console) => selectedConsoles.has(console.name))
+        ) {
+          return false;
+        }
+
+        if (query.rating && game.esrbRating !== query.rating) {
+          return false;
+        }
+
+        if (query.minPlayers != null || query.maxPlayers != null) {
+          const players = game.maxLocalMultiplayerPlayers;
+          if (
+            players == null ||
+            (query.minPlayers != null && players < query.minPlayers) ||
+            (query.maxPlayers != null && players > query.maxPlayers)
+          ) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      const sort = query.sort ?? "title";
+      const direction = query.direction ?? "asc";
+      const directionMultiplier = direction === "asc" ? 1 : -1;
+      const sorted = filtered.sort((left, right) => {
+        const comparison =
+          sort === "title"
+            ? left.title.toLowerCase().localeCompare(right.title.toLowerCase())
+            : left.originalReleaseYear - right.originalReleaseYear;
+        return comparison === 0
+          ? left.id - right.id
+          : comparison * directionMultiplier;
+      });
+      const size = 20;
+      const page = query.page ?? 0;
+      const totalItems = sorted.length;
+      const totalPages = Math.ceil(totalItems / size);
+
+      return {
+        items: sorted.slice(page * size, (page + 1) * size).map(copyGame),
+        page,
+        size,
+        totalItems,
+        totalPages,
+      };
+    },
     getGame: async (id) => {
       const game = collection.items.find((item) => item.id === id);
       return game ? copyGame(game) : undefined;

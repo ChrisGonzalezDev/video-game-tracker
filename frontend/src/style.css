@@ -130,6 +130,28 @@ a {
   gap: 1rem;
 }
 
+.collection-controls {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #293241;
+  border-radius: 0.85rem;
+  background: #171d28;
+}
+
+.collection-controls__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1rem;
+}
+
+.collection-controls__reset.MuiButton-root {
+  align-self: flex-start;
+}
+
+.collection-pagination {
+  flex-wrap: wrap;
+}
+
 .game-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));

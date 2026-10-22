@@ -105,6 +105,126 @@ describe("collection view", () => {
     ).toBeInTheDocument();
     expect(calls).toBe(2);
   });
+
+  it("searches by title and comments, shows no matches, and clears criteria", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const search = await screen.findByRole("searchbox", { name: "Search games" });
+    fireEvent.change(search, { target: { value: "weekend co-op" } });
+
+    expect(
+      await screen.findByRole("button", {
+        name: "View details for Starfall Tactics",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 game")).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "no matching game" } });
+    expect(
+      await screen.findByRole("heading", {
+        name: "No games match your search",
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Clear search and filters" }),
+    );
+    expect(
+      await screen.findByRole("button", {
+        name: "View details for Clockwork Isles",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "No games match your search" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("combines console, rating, and player filters", async () => {
+    render(<App />);
+    await screen.findByRole("button", { name: "Add game" });
+
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Consoles" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Nintendo Switch" }));
+    fireEvent.keyDown(screen.getByRole("listbox", { name: "Consoles" }), {
+      key: "Escape",
+    });
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "ESRB rating" }));
+    fireEvent.click(await screen.findByRole("option", { name: "T" }));
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Minimum players" }), {
+      target: { value: "2" },
+    });
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Maximum players" }), {
+      target: { value: "2" },
+    });
+
+    expect(
+      await screen.findByRole("button", {
+        name: "View details for Starfall Tactics",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 game")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "View details for Clockwork Isles" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "View details for Neon Drift Circuit" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Minimum players" }), {
+      target: { value: "4" },
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Correct the player filters to update results.",
+    );
+  });
+
+  it("paginates results and resets to the first page after criteria changes", async () => {
+    const user = userEvent.setup();
+    const games: Game[] = Array.from({ length: 25 }, (_, index) => ({
+      ...testGame,
+      id: index + 1,
+      title: `Game ${String(index + 1).padStart(2, "0")}`,
+    }));
+    const collection: GamePage = {
+      items: games,
+      page: 0,
+      size: 20,
+      totalItems: games.length,
+      totalPages: 2,
+    };
+    render(<App collectionDataSource={createDataSource({}, collection)} />);
+
+    expect(await screen.findByText("Page 1 of 2")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "View details for Game 21" }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search games" }), {
+      target: { value: "25" },
+    });
+    expect(await screen.findByText("Page 1 of 1")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "View details for Game 25" }),
+    ).toBeInTheDocument();
+  });
+
+  it("sorts the collection by release year in either direction", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("button", { name: "Add game" });
+
+    await user.click(screen.getByRole("combobox", { name: "Sort by" }));
+    await user.click(screen.getByRole("option", { name: "Release year" }));
+    let games = screen.getAllByRole("button", { name: /View details for/ });
+    expect(games[0]).toHaveAccessibleName("View details for Clockwork Isles");
+
+    await user.click(screen.getByRole("combobox", { name: "Sort direction" }));
+    await user.click(screen.getByRole("option", { name: "Descending" }));
+    games = screen.getAllByRole("button", { name: /View details for/ });
+    expect(games[0]).toHaveAccessibleName("View details for Neon Drift Circuit");
+  });
 });
 
 describe("game details", () => {

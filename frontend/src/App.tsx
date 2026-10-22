@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -16,12 +16,23 @@ import {
   createTheme,
 } from "@mui/material";
 import type { ReactNode } from "react";
+import CollectionControls, {
+  defaultCollectionControls,
+  hasInvalidPlayerCriteria,
+  type CollectionControlsState,
+} from "./features/collection/CollectionControls";
 import GameForm from "./features/collection/GameForm";
 import {
   fixtureCollectionDataSource,
+  type CollectionQuery,
   type CollectionDataSource,
 } from "./features/collection/collectionDataSource";
-import type { Console, Game, GamePage, GameWrite } from "./features/collection/types";
+import type {
+  Console,
+  Game,
+  GamePage,
+  GameWrite,
+} from "./features/collection/types";
 
 interface AppProps {
   collectionDataSource?: CollectionDataSource;
@@ -29,7 +40,11 @@ interface AppProps {
 
 type CollectionState =
   | { status: "loading" }
-  | { status: "success"; collection: GamePage }
+  | {
+      status: "success";
+      collection: GamePage;
+      totalCollectionItems: number;
+    }
   | { status: "error" };
 
 type FormMode = "create" | "edit";
@@ -122,10 +137,26 @@ function CollectionContents({
   state,
   onRetry,
   onOpenGame,
+  criteria,
+  consoles,
+  onCriteriaChange,
+  onPageChange,
+  queryError,
+  onRetryQuery,
+  queryPending,
+  invalidPlayerCriteria,
 }: {
   state: CollectionState;
   onRetry: () => void;
   onOpenGame: (id: number) => void;
+  criteria: CollectionControlsState;
+  consoles: Console[];
+  onCriteriaChange: (criteria: CollectionControlsState) => void;
+  onPageChange: (page: number) => void;
+  queryError: boolean;
+  onRetryQuery: () => void;
+  queryPending: boolean;
+  invalidPlayerCriteria: boolean;
 }) {
   if (state.status === "loading") {
     return (
@@ -152,7 +183,7 @@ function CollectionContents({
     );
   }
 
-  if (state.collection.items.length === 0) {
+  if (state.totalCollectionItems === 0) {
     return (
       <Box className="collection-state collection-state--empty" role="status">
         <span className="empty-mark" aria-hidden="true">
@@ -179,11 +210,78 @@ function CollectionContents({
           {state.collection.totalItems === 1 ? "game" : "games"}
         </Typography>
       </Box>
-      <Box className="game-grid">
-        {state.collection.items.map((game) => (
-          <GameCard key={game.id} game={game} onOpen={onOpenGame} />
-        ))}
-      </Box>
+      <CollectionControls
+        criteria={criteria}
+        consoles={consoles}
+        onCriteriaChange={onCriteriaChange}
+      />
+      {queryPending && (
+        <Typography role="status" aria-live="polite" color="text.secondary">
+          Updating results…
+        </Typography>
+      )}
+      {queryError && (
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={onRetryQuery}>
+              Try again
+            </Button>
+          }
+        >
+          We couldn’t update your results. Please try again.
+        </Alert>
+      )}
+      {invalidPlayerCriteria && (
+        <Alert severity="warning">
+          Correct the player filters to update results.
+        </Alert>
+      )}
+      {state.collection.totalItems === 0 ? (
+        <Box className="collection-state collection-state--empty" role="status">
+          <Typography component="h2" variant="h5">
+            No games match your search
+          </Typography>
+          <Typography color="text.secondary">
+            Try changing your search or filters, or clear them to see your collection.
+          </Typography>
+        </Box>
+      ) : (
+        <Box className="game-grid">
+          {state.collection.items.map((game) => (
+            <GameCard key={game.id} game={game} onOpen={onOpenGame} />
+          ))}
+        </Box>
+      )}
+      {state.collection.totalPages > 0 && (
+        <Stack
+          className="collection-pagination"
+          direction="row"
+          spacing={1.5}
+          sx={{ alignItems: "center", justifyContent: "center" }}
+        >
+          <Button
+            variant="outlined"
+            onClick={() => onPageChange(state.collection.page - 1)}
+            disabled={state.collection.page === 0 || queryPending}
+          >
+            Previous
+          </Button>
+          <Typography aria-live="polite">
+            Page {state.collection.page + 1} of {state.collection.totalPages}
+          </Typography>
+          <Button
+            variant="outlined"
+            onClick={() => onPageChange(state.collection.page + 1)}
+            disabled={
+              state.collection.page + 1 >= state.collection.totalPages ||
+              queryPending
+            }
+          >
+            Next
+          </Button>
+        </Stack>
+      )}
     </Stack>
   );
 }
@@ -270,30 +368,26 @@ function DetailField({
   );
 }
 
-function updateCollectionWithGame(
-  state: CollectionState,
-  game: Game,
-  isNew: boolean,
-): CollectionState {
-  if (state.status !== "success") {
-    return state;
+function positiveInteger(value: string): number | undefined {
+  if (value === "") {
+    return undefined;
   }
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : undefined;
+}
 
-  const items = isNew
-    ? [...state.collection.items, game]
-    : state.collection.items.map((item) => (item.id === game.id ? game : item));
-  const totalItems = isNew
-    ? state.collection.totalItems + 1
-    : state.collection.totalItems;
-
+function toCollectionQuery(criteria: CollectionControlsState): CollectionQuery {
+  const minPlayers = positiveInteger(criteria.minPlayers);
+  const maxPlayers = positiveInteger(criteria.maxPlayers);
   return {
-    status: "success",
-    collection: {
-      ...state.collection,
-      items,
-      totalItems,
-      totalPages: Math.ceil(totalItems / state.collection.size),
-    },
+    keyword: criteria.keyword,
+    consoles: criteria.consoles,
+    ...(criteria.rating ? { rating: criteria.rating } : {}),
+    ...(minPlayers != null ? { minPlayers } : {}),
+    ...(maxPlayers != null ? { maxPlayers } : {}),
+    sort: criteria.sort,
+    direction: criteria.direction,
+    page: criteria.page,
   };
 }
 
@@ -307,27 +401,79 @@ function CollectionApp({
   });
   const [screen, setScreen] = useState<Screen>({ view: "collection" });
   const [attempt, setAttempt] = useState(0);
+  const [queryAttempt, setQueryAttempt] = useState(0);
+  const [criteria, setCriteria] = useState(defaultCollectionControls);
+  const [consoleOptions, setConsoleOptions] = useState<Console[]>([]);
+  const [queryError, setQueryError] = useState(false);
+  const [queryPending, setQueryPending] = useState(false);
+  const hasLoadedCollection = useRef(false);
 
   useEffect(() => {
     let isCurrent = true;
-    setCollectionState({ status: "loading" });
-    collectionDataSource
-      .getCollection()
-      .then((collection) => {
-        if (isCurrent) {
-          setCollectionState({ status: "success", collection });
+    const isInitialLoad = !hasLoadedCollection.current;
+    if (hasInvalidPlayerCriteria(criteria)) {
+      setQueryPending(false);
+      setQueryError(false);
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    if (isInitialLoad) {
+      setCollectionState({ status: "loading" });
+    } else {
+      setQueryPending(true);
+    }
+    setQueryError(false);
+
+    async function loadCollection() {
+      try {
+        const collection = await collectionDataSource.getCollection(
+          toCollectionQuery(criteria),
+        );
+        if (isInitialLoad) {
+          const consoles = await collectionDataSource.getConsoles();
+          if (isCurrent) {
+            hasLoadedCollection.current = true;
+            setConsoleOptions(consoles);
+            setCollectionState({
+              status: "success",
+              collection,
+              totalCollectionItems: collection.totalItems,
+            });
+          }
+        } else if (isCurrent) {
+          setCollectionState((current) =>
+            current.status === "success"
+              ? { ...current, collection }
+              : {
+                  status: "success",
+                  collection,
+                  totalCollectionItems: collection.totalItems,
+                },
+          );
         }
-      })
-      .catch(() => {
+      } catch {
         if (isCurrent) {
-          setCollectionState({ status: "error" });
+          if (isInitialLoad) {
+            setCollectionState({ status: "error" });
+          } else {
+            setQueryError(true);
+          }
         }
-      });
+      } finally {
+        if (isCurrent) {
+          setQueryPending(false);
+        }
+      }
+    }
+
+    void loadCollection();
 
     return () => {
       isCurrent = false;
     };
-  }, [attempt, collectionDataSource]);
+  }, [attempt, criteria, collectionDataSource, queryAttempt]);
 
   async function openGame(id: number) {
     setScreen({ view: "detail-loading" });
@@ -365,7 +511,23 @@ function CollectionApp({
 
   async function createGame(write: GameWrite) {
     const created = await collectionDataSource.createGame(write);
-    setCollectionState((current) => updateCollectionWithGame(current, created, true));
+    try {
+      const collection = await collectionDataSource.getCollection(
+        toCollectionQuery(criteria),
+      );
+      setCollectionState((current) =>
+        current.status === "success"
+          ? {
+              ...current,
+              collection,
+              totalCollectionItems: current.totalCollectionItems + 1,
+            }
+          : current,
+      );
+      setQueryError(false);
+    } catch {
+      setQueryError(true);
+    }
     setScreen({ view: "detail", game: created });
   }
 
@@ -374,9 +536,17 @@ function CollectionApp({
       throw new Error("The game being edited is no longer available.");
     }
     const updated = await collectionDataSource.updateGame(screen.game.id, write);
-    setCollectionState((current) =>
-      updateCollectionWithGame(current, updated, false),
-    );
+    try {
+      const collection = await collectionDataSource.getCollection(
+        toCollectionQuery(criteria),
+      );
+      setCollectionState((current) =>
+        current.status === "success" ? { ...current, collection } : current,
+      );
+      setQueryError(false);
+    } catch {
+      setQueryError(true);
+    }
     setScreen({ view: "detail", game: updated });
   }
 
@@ -478,6 +648,16 @@ function CollectionApp({
               state={collectionState}
               onRetry={() => setAttempt((current) => current + 1)}
               onOpenGame={(id) => void openGame(id)}
+              criteria={criteria}
+              consoles={consoleOptions}
+              onCriteriaChange={setCriteria}
+              onPageChange={(page) =>
+                setCriteria((current) => ({ ...current, page }))
+              }
+              queryError={queryError}
+              onRetryQuery={() => setQueryAttempt((current) => current + 1)}
+              queryPending={queryPending}
+              invalidPlayerCriteria={hasInvalidPlayerCriteria(criteria)}
             />
           </Box>
         )}

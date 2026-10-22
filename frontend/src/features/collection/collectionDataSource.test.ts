@@ -2,7 +2,7 @@ import {
   createFixtureCollectionDataSource,
   fixtureCollection,
 } from "./collectionDataSource";
-import type { GameWrite } from "./types";
+import type { Game, GamePage, GameWrite } from "./types";
 
 const newGame: GameWrite = {
   title: "Moonlit Harbor",
@@ -13,6 +13,59 @@ const newGame: GameWrite = {
   coverImageUrl: null,
   personalComments: null,
 };
+
+const queryGames: Game[] = [
+  {
+    id: 3,
+    title: "Zelda",
+    originalReleaseYear: 2020,
+    consoles: [{ name: "Nintendo Switch" }, { name: "Sony PlayStation 5" }],
+    esrbRating: "E",
+    maxLocalMultiplayerPlayers: 2,
+    coverImageUrl: null,
+    personalComments: "Local co-op adventure",
+  },
+  {
+    id: 1,
+    title: "Alpha",
+    originalReleaseYear: 2020,
+    consoles: [{ name: "Microsoft Xbox Series X/S" }],
+    esrbRating: "T",
+    maxLocalMultiplayerPlayers: 4,
+    coverImageUrl: null,
+    personalComments: null,
+  },
+  {
+    id: 2,
+    title: "alpha",
+    originalReleaseYear: 2018,
+    consoles: [{ name: "Nintendo Switch" }],
+    esrbRating: "E",
+    maxLocalMultiplayerPlayers: null,
+    coverImageUrl: null,
+    personalComments: null,
+  },
+  {
+    id: 4,
+    title: "No comment",
+    originalReleaseYear: 2022,
+    consoles: [{ name: "Microsoft Xbox Series X/S" }],
+    esrbRating: "E10+",
+    maxLocalMultiplayerPlayers: 3,
+    coverImageUrl: null,
+    personalComments: null,
+  },
+];
+
+function pageFromGames(games: Game[]): GamePage {
+  return {
+    items: games,
+    page: 0,
+    size: 20,
+    totalItems: games.length,
+    totalPages: Math.ceil(games.length / 20),
+  };
+}
 
 describe("fixture collection data source", () => {
   it("returns defensive copies and provides supported consoles", async () => {
@@ -47,7 +100,10 @@ describe("fixture collection data source", () => {
       id: created.id,
       title: "Moonlit Harbor: Director’s Cut",
     });
-    expect((await source.getCollection()).items.at(-1)?.title).toBe(
+    expect(
+      (await source.getCollection()).items.find((game) => game.id === created.id)
+        ?.title,
+    ).toBe(
       "Moonlit Harbor: Director’s Cut",
     );
   });
@@ -58,5 +114,104 @@ describe("fixture collection data source", () => {
     await expect(source.updateGame(404, newGame)).rejects.toThrow(
       "Game 404 was not found.",
     );
+  });
+
+  it("searches titles and comments case-insensitively and applies filters", async () => {
+    const source = createFixtureCollectionDataSource(pageFromGames(queryGames));
+
+    await expect(
+      source.getCollection({ keyword: "CO-OP" }),
+    ).resolves.toMatchObject({
+      items: [{ id: 3 }],
+      totalItems: 1,
+    });
+    await expect(
+      source.getCollection({
+        consoles: ["Nintendo Switch", "Microsoft Xbox Series X/S"],
+      }),
+    ).resolves.toMatchObject({ totalItems: 4 });
+    await expect(
+      source.getCollection({
+        consoles: ["Nintendo Switch"],
+        rating: "E",
+        minPlayers: 2,
+      }),
+    ).resolves.toMatchObject({
+      items: [{ id: 3 }],
+      totalItems: 1,
+    });
+    await expect(
+      source.getCollection({ rating: "T" }),
+    ).resolves.toMatchObject({
+      items: [{ id: 1 }],
+      totalItems: 1,
+    });
+  });
+
+  it("uses inclusive player bounds and excludes games without player counts", async () => {
+    const source = createFixtureCollectionDataSource(pageFromGames(queryGames));
+
+    await expect(
+      source.getCollection({ minPlayers: 2, maxPlayers: 3 }),
+    ).resolves.toMatchObject({
+      items: [{ id: 4 }, { id: 3 }],
+      totalItems: 2,
+    });
+    await expect(
+      source.getCollection({ minPlayers: 4 }),
+    ).resolves.toMatchObject({
+      items: [{ id: 1 }],
+      totalItems: 1,
+    });
+    await expect(
+      source.getCollection({ maxPlayers: 1 }),
+    ).resolves.toMatchObject({ items: [], totalItems: 0, totalPages: 0 });
+    await expect(
+      source.getCollection({ minPlayers: 4, maxPlayers: 2 }),
+    ).rejects.toThrow("minPlayers cannot exceed maxPlayers.");
+  });
+
+  it("sorts by title or release year and keeps ID ascending for ties", async () => {
+    const source = createFixtureCollectionDataSource(pageFromGames(queryGames));
+
+    await expect(
+      source.getCollection({ sort: "title" }),
+    ).resolves.toMatchObject({
+      items: [{ id: 1 }, { id: 2 }, { id: 4 }, { id: 3 }],
+    });
+    await expect(
+      source.getCollection({ sort: "originalReleaseYear", direction: "asc" }),
+    ).resolves.toMatchObject({
+      items: [{ id: 2 }, { id: 1 }, { id: 3 }, { id: 4 }],
+    });
+    await expect(
+      source.getCollection({ sort: "originalReleaseYear", direction: "desc" }),
+    ).resolves.toMatchObject({
+      items: [{ id: 4 }, { id: 1 }, { id: 3 }, { id: 2 }],
+    });
+  });
+
+  it("returns page metadata and empty items for pages beyond the last page", async () => {
+    const games = Array.from({ length: 25 }, (_, index): Game => ({
+      ...queryGames[0],
+      id: index + 1,
+      title: `Game ${String(index + 1).padStart(2, "0")}`,
+    }));
+    const source = createFixtureCollectionDataSource(pageFromGames(games));
+
+    await expect(source.getCollection({ page: 1 })).resolves.toMatchObject({
+      items: [{ id: 21 }, { id: 22 }, { id: 23 }, { id: 24 }, { id: 25 }],
+      page: 1,
+      size: 20,
+      totalItems: 25,
+      totalPages: 2,
+    });
+    await expect(source.getCollection({ page: 2 })).resolves.toMatchObject({
+      items: [],
+      page: 2,
+      size: 20,
+      totalItems: 25,
+      totalPages: 2,
+    });
   });
 });

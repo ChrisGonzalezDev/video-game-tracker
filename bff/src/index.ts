@@ -1,12 +1,8 @@
-import express from "express";
+import { createApp } from "./app.js";
 
-const app = express();
 const port = Number(process.env.PORT ?? 3001);
-
-app.get("/health", (_request, response) => {
-  response.json({ status: "ok" });
-});
+const app = createApp();
 
 app.listen(port, () => {
-  console.log(`BFF scaffold listening at http://localhost:${port}`);
+  console.log(`BFF listening at http://localhost:${port}`);
 });

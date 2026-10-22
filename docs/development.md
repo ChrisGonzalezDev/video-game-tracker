@@ -71,7 +71,18 @@ From `frontend/`, run `npm install` and `npm run dev` to open the collection vie
 
 ### BFF
 
-From `bff/`, run `npm install`, `npm run dev`, and `npm run build`. The standalone health response is available at `http://localhost:3001/health` and returns `{"status":"ok"}`. For the compiled production entry point, run `npm start` after `npm run build`.
+From `bff/`, run `npm install` and `npm run dev`. The BFF listens on port
+`3001` by default; set `PORT` to override it. It provides `GET /health` and
+forwards the game and console routes under `/api/v1` to the Spring Boot API:
+`GET` and `POST /api/v1/games`, `GET /api/v1/games/{id}`,
+`PUT /api/v1/games/{id}`, `DELETE /api/v1/games/{id}`, and
+`GET /api/v1/consoles`.
+
+The backend API base URL is configurable with `BACKEND_API_URL` and defaults
+to `http://localhost:8080/api/v1`. For example, set it before starting the BFF
+when the backend uses a different host or port. Build with `npm run build` and
+run the BFF Jest tests with `npm test`. For the compiled production entry point,
+run `npm start` after `npm run build`.
 
 ### Backend
 

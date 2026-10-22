@@ -1,13 +1,13 @@
 # Architecture and Repository Layout
 
-This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend run independently. The frontend has an accessible collection view with fixture-backed search, filters, sorting, and pagination, plus dedicated game details/create/edit views backed by deterministic in-memory fixtures; live BFF integration remains planned. A database-only local PostgreSQL Compose service is available, and the backend can opt into its datasource with the `local` Spring profile. The backend has an initial Flyway schema, a 96-console catalog seed, game persistence repositories, and the versioned collection API.
+This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend run independently. The frontend has an accessible collection view with fixture-backed search, filters, sorting, and pagination, plus dedicated game details/create/edit views backed by deterministic in-memory fixtures; live frontend-to-BFF integration remains planned. The BFF exposes the versioned game and console routes and forwards requests to the backend. A database-only local PostgreSQL Compose service is available, and the backend can opt into its datasource with the `local` Spring profile. The backend has an initial Flyway schema, a 96-console catalog seed, game persistence repositories, and the versioned collection API.
 
 ## Repository layout
 
 | Location | Purpose | Status |
 | --- | --- | --- |
 | `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Responsive MUI collection with fixture-backed search, filters, sorting, pagination, game details, and create/edit forms; live BFF integration remains planned |
-| `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Minimal Express health response present; API and backend client planned |
+| `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Game and console route forwarding, configurable backend client, and health response present; frontend integration and standardized error mapping remain planned |
 | `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Spring Boot game/console domain, versioned CRUD/search API, Flyway schema, and persistence repositories present |
 | `contracts/` | Maintained OpenAPI contract, Redocly validation package, and contract usage documentation | OpenAPI 3.1 contract for the versioned backend API and Redocly validation workflow present |
 | `backend/src/main/resources/db/migration/` | Backend-owned Flyway schema migrations | Initial games, consoles, and game-console relationship migration plus 96 released-console seed entries present |
@@ -28,7 +28,7 @@ There is no central `tests/` directory defined. Keep tests with the module or sc
 
 ## System architecture
 
-The diagram shows the intended request path and API contract relationship. The frontend collection view currently uses a local fixture-backed data source for collection search and game data, and the independently runnable BFF and backend do not yet communicate with the frontend. PostgreSQL can be started separately for local development; the backend connects to it only when the `local` Spring profile is enabled.
+The diagram shows the intended request path and API contract relationship. The frontend collection view currently uses a local fixture-backed data source for collection search and game data and does not yet call the BFF. The BFF can forward requests to the independently runnable backend. PostgreSQL can be started separately for local development; the backend connects to it only when the `local` Spring profile is enabled.
 
 ```mermaid
 flowchart TD

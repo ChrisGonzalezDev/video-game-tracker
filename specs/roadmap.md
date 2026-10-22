@@ -70,7 +70,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 
 ## Phase 3 — BFF integration
 
-### 3.1 Implement BFF routes and backend client
+### 3.1 Implement BFF routes and backend client [Complete]
 
 - **Outcome:** The Express BFF exposes the frontend-facing routes and communicates with the Spring Boot API.
 - **Completion check:** BFF tests verify request handling, input validation, and downstream client behavior.

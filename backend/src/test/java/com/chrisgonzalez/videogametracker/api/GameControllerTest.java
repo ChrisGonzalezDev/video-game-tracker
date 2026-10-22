@@ -18,6 +18,8 @@ import com.chrisgonzalez.videogametracker.domain.Console;
 import com.chrisgonzalez.videogametracker.domain.EsrbRating;
 import com.chrisgonzalez.videogametracker.domain.Game;
 import com.chrisgonzalez.videogametracker.persistence.ConsoleRepository;
+import com.chrisgonzalez.videogametracker.persistence.GameSearchCriteria;
+import com.chrisgonzalez.videogametracker.persistence.GameSearchResult;
 import com.chrisgonzalez.videogametracker.persistence.GameRepository;
 import com.chrisgonzalez.videogametracker.persistence.PersistedGame;
 import java.net.URI;
@@ -25,6 +27,7 @@ import java.time.Year;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -44,6 +47,138 @@ class GameControllerTest {
 
     @MockitoBean
     private ConsoleRepository consoleRepository;
+
+    @Test
+    void searchesGamesWithContractDefaultsAndReturnsPageMetadata() throws Exception {
+        Game game = new Game(
+                "Example Game",
+                Year.of(2020),
+                Set.of(new Console("Nintendo Switch")),
+                EsrbRating.E10_PLUS,
+                4,
+                null,
+                "A personal note.");
+        when(gameRepository.search(any(GameSearchCriteria.class)))
+                .thenReturn(new GameSearchResult(List.of(new PersistedGame(42L, game)), 21));
+
+        mockMvc.perform(get("/api/v1/games"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(42))
+                .andExpect(jsonPath("$.items[0].title").value("Example Game"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalItems").value(21))
+                .andExpect(jsonPath("$.totalPages").value(2));
+
+        ArgumentCaptor<GameSearchCriteria> criteria = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).search(criteria.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(0, criteria.getValue().page());
+        org.junit.jupiter.api.Assertions.assertEquals(20, criteria.getValue().size());
+        org.junit.jupiter.api.Assertions.assertEquals(GameSearchCriteria.SortField.TITLE, criteria.getValue().sort());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                GameSearchCriteria.SortDirection.ASC,
+                criteria.getValue().direction());
+    }
+
+    @Test
+    void parsesAndPassesAllSupportedSearchParameters() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class))).thenReturn(new GameSearchResult(List.of(), 0));
+
+        mockMvc.perform(get("/api/v1/games")
+                        .param("keyword", "zelda")
+                        .param("console", "Nintendo Switch", "Sony PlayStation 5")
+                        .param("rating", "E10+")
+                        .param("minPlayers", "2")
+                        .param("maxPlayers", "8")
+                        .param("page", "3")
+                        .param("size", "25")
+                        .param("sort", "originalReleaseYear")
+                        .param("direction", "desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(3))
+                .andExpect(jsonPath("$.size").value(25))
+                .andExpect(jsonPath("$.totalItems").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
+
+        ArgumentCaptor<GameSearchCriteria> criteria = ArgumentCaptor.forClass(GameSearchCriteria.class);
+        verify(gameRepository).search(criteria.capture());
+        org.junit.jupiter.api.Assertions.assertEquals("zelda", criteria.getValue().keyword());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                List.of("Nintendo Switch", "Sony PlayStation 5"),
+                criteria.getValue().consoles());
+        org.junit.jupiter.api.Assertions.assertEquals(EsrbRating.E10_PLUS, criteria.getValue().rating());
+        org.junit.jupiter.api.Assertions.assertEquals(2, criteria.getValue().minPlayers());
+        org.junit.jupiter.api.Assertions.assertEquals(8, criteria.getValue().maxPlayers());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                GameSearchCriteria.SortField.ORIGINAL_RELEASE_YEAR,
+                criteria.getValue().sort());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                GameSearchCriteria.SortDirection.DESC,
+                criteria.getValue().direction());
+    }
+
+    @Test
+    void acceptsMinimumAndMaximumPageSizes() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class))).thenReturn(new GameSearchResult(List.of(), 0));
+
+        mockMvc.perform(get("/api/v1/games").param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(1));
+        mockMvc.perform(get("/api/v1/games").param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(100));
+    }
+
+    @Test
+    void returnsCorrectMetadataForPageBeyondLastResult() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class))).thenReturn(new GameSearchResult(List.of(), 3));
+
+        mockMvc.perform(get("/api/v1/games").param("page", "4").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.page").value(4))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.totalItems").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void returnsBadRequestForInvalidSearchParameters() throws Exception {
+        assertInvalidSearchParameter("page", "-1");
+        assertInvalidSearchParameter("page", "not-an-integer");
+        assertInvalidSearchParameter("size", "101");
+        assertInvalidSearchParameter("size", "0");
+        assertInvalidSearchParameter("rating", "UNRATED");
+        assertInvalidSearchParameter("minPlayers", "0");
+        assertInvalidSearchParameter("maxPlayers", "2147483648");
+        assertInvalidSearchParameter("sort", "id");
+        assertInvalidSearchParameter("direction", "DESC");
+        assertInvalidSearchParameter("console", "");
+
+        mockMvc.perform(get("/api/v1/games").param("minPlayers", "5").param("maxPlayers", "4"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.details[0].field").value("minPlayers"));
+        verify(gameRepository, never()).search(any(GameSearchCriteria.class));
+    }
+
+    @Test
+    void returnsInternalServerErrorWhenSearchFails() throws Exception {
+        when(gameRepository.search(any(GameSearchCriteria.class)))
+                .thenThrow(new IllegalStateException("database failure"));
+
+        mockMvc.perform(get("/api/v1/games"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(jsonPath("$.details").isEmpty());
+    }
+
+    private void assertInvalidSearchParameter(String parameter, String value) throws Exception {
+        mockMvc.perform(get("/api/v1/games").param(parameter, value))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.details[0].field").value(parameter));
+    }
 
     @Test
     void returnsGameWithIdAndAllContractFields() throws Exception {

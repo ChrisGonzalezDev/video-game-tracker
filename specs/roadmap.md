@@ -46,7 +46,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Clients can create, edit, and delete games with server-side validation.
 - **Completion check:** Backend tests cover valid operations, invalid input, and consistent error responses.
 
-### 1.6 Add collection search and pagination
+### 1.6 Add collection search and pagination [Complete]
 
 - **Outcome:** The games endpoint supports keyword search, combined filters, sorting, and predictable pagination.
 - **Completion check:** Tests verify individual and combined query criteria, sort behavior, and pagination metadata.

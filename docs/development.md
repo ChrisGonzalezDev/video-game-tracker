@@ -1,6 +1,6 @@
 # Development Workflow
 
-The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; the backend has game and console CRUD plus collection search, while frontend and BFF collection behavior remain planned.
+The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; the backend has game and console CRUD plus collection search, and the frontend has fixture-backed collection search and filtering. Live frontend-to-BFF collection behavior remains planned.
 
 ## Feature workflow
 
@@ -67,7 +67,7 @@ The environment variables, Compose setup, and backend datasource properties are 
 
 ### Frontend
 
-From `frontend/`, run `npm install` and `npm run dev` to open the collection view at `http://localhost:3000`. Game details and create/edit forms use deterministic in-memory fixture data that resets on reload; the frontend does not make live requests to the BFF or backend. Run `npm run build` to verify the production bundle and `npm test` to run the frontend Jest component tests.
+From `frontend/`, run `npm install` and `npm run dev` to open the collection view at `http://localhost:3000`. Collection search, filters, sorting, pagination, game details, and create/edit forms use deterministic in-memory fixture data that resets on reload; the frontend does not make live requests to the BFF or backend. Run `npm run build` to verify the production bundle and `npm test` to run the frontend Jest component tests.
 
 ### BFF
 

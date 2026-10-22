@@ -47,10 +47,14 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #f3f4f6;
   font-size: 0.98rem;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .brand:focus-visible {
@@ -86,6 +90,13 @@ a {
 
 .page-intro {
   margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.page-intro__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
 }
 
 .eyebrow {
@@ -135,6 +146,19 @@ a {
     box-shadow 160ms ease;
 }
 
+.game-card__action.MuiButton-root {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  border-radius: inherit;
+  color: inherit;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+}
+
 .game-card.MuiCard-root:hover {
   transform: translateY(-2px);
   border-color: #50617e;
@@ -173,6 +197,7 @@ a {
 
 .game-card__content.MuiCardContent-root {
   display: flex;
+  width: 100%;
   min-height: 9rem;
   flex-direction: column;
   align-items: flex-start;
@@ -227,6 +252,73 @@ a {
   align-items: center;
 }
 
+.game-form {
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+}
+
+.console-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.25rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.console-options .MuiFormControlLabel-root {
+  min-width: 0;
+  margin-right: 0;
+}
+
+.console-options .MuiFormControlLabel-label {
+  overflow-wrap: anywhere;
+}
+
+.game-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.game-details__field {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #293241;
+  border-radius: 0.85rem;
+  background: #171d28;
+}
+
+.game-details__field dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.game-details__field a {
+  overflow-wrap: anywhere;
+  color: #bdcafa;
+}
+
+.game-details__cover {
+  display: block;
+  width: min(100%, 36rem);
+  max-height: 24rem;
+  border-radius: 1rem;
+  object-fit: contain;
+  object-position: left;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 @media (max-width: 480px) {
   .header-label {
     font-size: 0.58rem;
@@ -237,6 +329,15 @@ a {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .page-intro__row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .game-details {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

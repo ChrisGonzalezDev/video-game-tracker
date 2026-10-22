@@ -67,7 +67,7 @@ The environment variables, Compose setup, and backend datasource properties are 
 
 ### Frontend
 
-From `frontend/`, run `npm install` and `npm run dev` to open the collection view at `http://localhost:3000`. The current collection is deterministic fixture data; it does not make live requests to the BFF or backend. Run `npm run build` to verify the production bundle and `npm test` to run the frontend Jest component tests.
+From `frontend/`, run `npm install` and `npm run dev` to open the collection view at `http://localhost:3000`. Game details and create/edit forms use deterministic in-memory fixture data that resets on reload; the frontend does not make live requests to the BFF or backend. Run `npm run build` to verify the production bundle and `npm test` to run the frontend Jest component tests.
 
 ### BFF
 

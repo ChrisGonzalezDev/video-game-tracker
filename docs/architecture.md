@@ -1,12 +1,12 @@
 # Architecture and Repository Layout
 
-This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend run independently. The frontend now has an accessible collection view backed by deterministic local fixtures; live BFF integration remains planned. A database-only local PostgreSQL Compose service is available, and the backend can opt into its datasource with the `local` Spring profile. The backend has an initial Flyway schema, a 96-console catalog seed, game persistence repositories, and the versioned collection API.
+This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend run independently. The frontend has an accessible collection view and dedicated game details/create/edit views backed by deterministic in-memory fixtures; live BFF integration remains planned. A database-only local PostgreSQL Compose service is available, and the backend can opt into its datasource with the `local` Spring profile. The backend has an initial Flyway schema, a 96-console catalog seed, game persistence repositories, and the versioned collection API.
 
 ## Repository layout
 
 | Location | Purpose | Status |
 | --- | --- | --- |
-| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Responsive MUI collection view with typed fixture data and Jest/MSW tests present; forms, search controls, and live BFF integration remain planned |
+| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Responsive MUI collection, game details, and create/edit forms with typed in-memory fixture data and Jest/MSW tests present; search controls and live BFF integration remain planned |
 | `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Minimal Express health response present; API and backend client planned |
 | `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Spring Boot game/console domain, versioned CRUD/search API, Flyway schema, and persistence repositories present |
 | `contracts/` | Maintained OpenAPI contract, Redocly validation package, and contract usage documentation | OpenAPI 3.1 contract for the versioned backend API and Redocly validation workflow present |

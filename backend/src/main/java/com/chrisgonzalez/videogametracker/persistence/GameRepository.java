@@ -6,12 +6,17 @@ import com.chrisgonzalez.videogametracker.domain.Game;
 import java.net.URI;
 import java.sql.PreparedStatement;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
@@ -21,9 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class GameRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
-    public GameRepository(JdbcTemplate jdbcTemplate) {
+    public GameRepository(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
     }
 
     @Transactional
@@ -160,6 +167,121 @@ public class GameRepository {
                         first.personalComments())));
     }
 
+    @Transactional(readOnly = true)
+    public GameSearchResult search(GameSearchCriteria criteria) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        String whereClause = buildSearchWhereClause(criteria, parameters);
+        long totalItems = namedParameterJdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM games g " + whereClause,
+                        parameters,
+                        Long.class);
+        if (totalItems == 0 || criteria.offset() >= totalItems) {
+            return new GameSearchResult(List.of(), totalItems);
+        }
+
+        parameters.addValue("size", criteria.size());
+        parameters.addValue("offset", criteria.offset());
+        String orderBy = searchOrderBy(criteria);
+        String pageQuery = """
+                WITH page_ids AS (
+                    SELECT g.id
+                    FROM games g
+                """ + whereClause + "\n ORDER BY " + orderBy + """
+                 LIMIT :size OFFSET :offset
+                )
+                SELECT g.id, g.title, g.original_release_year, g.esrb_rating,
+                       g.max_local_multiplayer_players, g.cover_image_url,
+                       g.personal_comments, c.name AS console_name
+                FROM page_ids p
+                JOIN games g ON g.id = p.id
+                JOIN game_consoles gc ON gc.game_id = g.id
+                JOIN consoles c ON c.id = gc.console_id
+                """ + " ORDER BY " + orderBy + ", c.name";
+        List<SearchGameRow> rows = namedParameterJdbcTemplate.query(
+                        pageQuery,
+                        parameters,
+                        (resultSet, rowNumber) -> new SearchGameRow(
+                                resultSet.getLong("id"),
+                                resultSet.getString("title"),
+                                resultSet.getInt("original_release_year"),
+                                resultSet.getString("esrb_rating"),
+                                (Integer) resultSet.getObject("max_local_multiplayer_players"),
+                                resultSet.getString("cover_image_url"),
+                                resultSet.getString("personal_comments"),
+                                new Console(resultSet.getString("console_name"))));
+
+        Map<Long, List<SearchGameRow>> rowsByGame = new LinkedHashMap<>();
+        rows.forEach(row -> rowsByGame.computeIfAbsent(row.id(), ignored -> new ArrayList<>()).add(row));
+        List<PersistedGame> items = rowsByGame.values().stream()
+                        .map(this::toPersistedGame)
+                        .toList();
+        return new GameSearchResult(items, totalItems);
+    }
+
+    private static String buildSearchWhereClause(
+            GameSearchCriteria criteria,
+            MapSqlParameterSource parameters) {
+        StringBuilder whereClause = new StringBuilder(" WHERE 1 = 1");
+        if (criteria.keyword() != null) {
+            whereClause.append("""
+                             AND (
+                                 POSITION(LOWER(:keyword) IN LOWER(g.title)) > 0
+                                 OR POSITION(LOWER(:keyword) IN LOWER(COALESCE(g.personal_comments, ''))) > 0
+                             )
+                            """);
+            parameters.addValue("keyword", criteria.keyword());
+        }
+        if (!criteria.consoles().isEmpty()) {
+            whereClause.append("""
+                             AND EXISTS (
+                                 SELECT 1
+                                 FROM game_consoles filter_gc
+                                 JOIN consoles filter_c ON filter_c.id = filter_gc.console_id
+                                 WHERE filter_gc.game_id = g.id
+                                   AND filter_c.name IN (:consoles)
+                             )
+                            """);
+            parameters.addValue("consoles", criteria.consoles());
+        }
+        if (criteria.rating() != null) {
+            whereClause.append(" AND g.esrb_rating = :rating");
+            parameters.addValue("rating", criteria.rating().value());
+        }
+        if (criteria.minPlayers() != null) {
+            whereClause.append(" AND g.max_local_multiplayer_players >= :minPlayers");
+            parameters.addValue("minPlayers", criteria.minPlayers());
+        }
+        if (criteria.maxPlayers() != null) {
+            whereClause.append(" AND g.max_local_multiplayer_players <= :maxPlayers");
+            parameters.addValue("maxPlayers", criteria.maxPlayers());
+        }
+        return whereClause.toString();
+    }
+
+    private static String searchOrderBy(GameSearchCriteria criteria) {
+        String column = switch (criteria.sort()) {
+            case TITLE -> "LOWER(g.title)";
+            case ORIGINAL_RELEASE_YEAR -> "g.original_release_year";
+        };
+        return column + " " + criteria.direction().name() + ", g.id ASC";
+    }
+
+    private PersistedGame toPersistedGame(List<SearchGameRow> rows) {
+        SearchGameRow first = rows.get(0);
+        Set<Console> consoles = new HashSet<>();
+        rows.forEach(row -> consoles.add(row.console()));
+        return new PersistedGame(
+                        first.id(),
+                        new Game(
+                                first.title(),
+                                Year.of(first.originalReleaseYear()),
+                                consoles,
+                                first.esrbRating() == null ? null : EsrbRating.fromValue(first.esrbRating()),
+                                first.maxLocalMultiplayerPlayers(),
+                                first.coverImageUrl() == null ? null : URI.create(first.coverImageUrl()),
+                                first.personalComments()));
+    }
+
     private List<Long> findConsoleIds(Game game) {
         return game.consoles().stream()
                 .map(console -> {
@@ -176,6 +298,17 @@ public class GameRepository {
     }
 
     private record GameRow(
+            long id,
+            String title,
+            int originalReleaseYear,
+            String esrbRating,
+            Integer maxLocalMultiplayerPlayers,
+            String coverImageUrl,
+            String personalComments,
+            Console console) {
+    }
+
+    private record SearchGameRow(
             long id,
             String title,
             int originalReleaseYear,

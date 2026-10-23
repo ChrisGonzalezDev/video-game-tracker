@@ -96,7 +96,41 @@ Requests rejected by the BFF return HTTP 400 with an `INVALID_REQUEST`
 
 From `backend/`, build with `./mvnw package` and start with `./mvnw spring-boot:run`. On Windows, use `mvnw.cmd package` and `mvnw.cmd spring-boot:run`. The Spring Boot Actuator health endpoint is `http://localhost:8080/actuator/health`; it does not require PostgreSQL. The build requires JDK 17.
 
-The PostgreSQL migration and persistence integration test uses Testcontainers and requires Docker. Run it from `backend/` with `.\mvnw.cmd -Dtest=GameRepositoryIntegrationTest test`. It creates a disposable PostgreSQL 17.6 container and applies the Flyway migration to a clean database.
+### Cross-layer integration tests
+
+The backend integration suite uses Testcontainers and requires Docker. It
+starts a disposable PostgreSQL 17.6 container, applies the Flyway migrations,
+and exercises the backend over HTTP. A second test starts the real BFF with
+`tsx` and sends HTTP requests through it to the running backend, including a
+downstream not-found response. Both suites check exercised request, response,
+and status definitions against `contracts/openapi.yaml`; they do not require
+the local PostgreSQL Compose service or the full-stack Compose environment.
+
+Install the BFF dependencies once from `bff/`:
+
+```powershell
+npm ci
+```
+
+Then run the backend unit and integration tests from `backend/`:
+
+```powershell
+.\mvnw.cmd test
+```
+
+The BFF must be installed because the backend integration test starts its
+TypeScript entry point directly. Run the BFF unit tests independently from
+`bff/` with `npm test`. Validate the OpenAPI document separately from
+`contracts/` with:
+
+```powershell
+npm ci
+npm run validate
+```
+
+These checks require JDK 17 or newer, Node.js 22.12 or newer, npm, and Docker
+with a working Docker Engine. The tests create and clean up their own
+containers and service processes.
 
 ## Cross-cutting conventions
 

@@ -11,7 +11,7 @@ This guide describes the intended architecture and distinguishes it from what is
 | `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Spring Boot game/console domain, versioned CRUD/search API, Flyway schema, and persistence repositories present |
 | `contracts/` | Maintained OpenAPI contract, Redocly validation package, and contract usage documentation | OpenAPI 3.1 contract for the versioned backend API and Redocly validation workflow present |
 | `backend/src/main/resources/db/migration/` | Backend-owned Flyway schema migrations | Initial games, consoles, and game-console relationship migration plus 96 released-console seed entries present |
-| Tests in `frontend/`, `bff/`, and `backend/` | Unit and component tests for their owning modules; backend and BFF integration tests belong with the relevant module | Frontend collection component tests and backend domain unit/PostgreSQL persistence-migration integration tests present; BFF suites planned |
+| Tests in `frontend/`, `bff/`, and `backend/` | Unit and component tests for their owning modules; backend and BFF integration tests belong with the relevant module | Frontend and BFF unit/component tests present; backend includes repository and HTTP integration tests against PostgreSQL Testcontainers, including live BFF-to-backend coverage |
 | `e2e/` | Playwright tests for critical workflows across the running application | Planned |
 | `docs/architecture.md` | This guide to module purpose, boundaries, and request flow | Present |
 | `docs/development.md` | Contributor workflow and verification conventions | Present |

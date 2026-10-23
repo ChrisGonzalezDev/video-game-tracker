@@ -25,3 +25,8 @@ npm run validate
 The validation script runs Redocly CLI against `openapi.yaml`. It exits
 unsuccessfully when the document has OpenAPI errors. Update this contract and
 keep the validation command passing whenever the backend API contract changes.
+
+The backend HTTP integration suite also checks the exercised implemented
+operations' request and response payloads and status codes against this
+contract. Run it from `backend/` with `.\mvnw.cmd test`; it requires Docker and
+an installed BFF workspace (`bff/npm ci`) for its live BFF-to-backend test.

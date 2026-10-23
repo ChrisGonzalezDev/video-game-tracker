@@ -87,7 +87,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 
 ## Phase 4 — Full-stack verification and local demonstration
 
-### 4.1 Add cross-layer integration tests
+### 4.1 Add cross-layer integration tests [Complete]
 
 - **Outcome:** Backend persistence and BFF-to-backend communication are verified together.
 - **Completion check:** Integration tests exercise REST endpoints and persistence against PostgreSQL, with OpenAPI compatibility checks.

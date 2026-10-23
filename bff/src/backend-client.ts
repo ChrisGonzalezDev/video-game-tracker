@@ -46,8 +46,10 @@ export function createBackendClient(
     }
 
     let response: Response;
+    let responseBody: string;
     try {
       response = await request(url, init);
+      responseBody = response.status === 204 ? "" : await response.text();
     } catch (error) {
       throw new BackendTransportError(error);
     }
@@ -56,7 +58,7 @@ export function createBackendClient(
       status: response.status,
       contentType: response.headers.get("content-type"),
       location: response.headers.get("location"),
-      body: response.status === 204 ? "" : await response.text(),
+      body: responseBody,
     };
   }
 

@@ -16,6 +16,17 @@ const okResponse: BackendResponse = {
   body: '{"ok":true}',
 };
 
+const apiError = (
+  code: "INVALID_REQUEST" | "GAME_NOT_FOUND" | "INTERNAL_SERVER_ERROR",
+  message: string,
+  details: Array<{ field: string; message: string }> = [],
+): BackendResponse => ({
+  status: code === "GAME_NOT_FOUND" ? 404 : 400,
+  contentType: "application/json",
+  location: null,
+  body: JSON.stringify({ code, message, details }),
+});
+
 function createMockClient(): jest.Mocked<BackendClient> {
   return {
     getGames: jest.fn<BackendClient["getGames"]>().mockResolvedValue(okResponse),
@@ -98,6 +109,7 @@ describe("BFF routes", () => {
     expect(client.createGame).toHaveBeenCalledWith(body);
     expect(response.status).toBe(201);
     expect(response.headers.get("location")).toBe("/api/v1/games/12");
+    expect(response.headers.get("content-type")).toMatch(/^application\/json/);
     expect(await response.json()).toEqual({ id: 12 });
   });
 
@@ -138,18 +150,27 @@ describe("BFF routes", () => {
     expect(await response.text()).toBe("");
   });
 
-  test("does not convert downstream HTTP errors into success", async () => {
-    client.getGame.mockResolvedValue({
-      status: 404,
-      contentType: "application/json",
-      location: null,
-      body: '{"code":"GAME_NOT_FOUND"}',
-    });
+  test.each([
+    [
+      "a valid bad-request error",
+      apiError("INVALID_REQUEST", "Request contains invalid values.", [
+        { field: "title", message: "must not be blank" },
+      ]),
+      400,
+    ],
+    [
+      "a valid not-found error",
+      apiError("GAME_NOT_FOUND", "Game was not found."),
+      404,
+    ],
+  ])("preserves %s status and ApiError data", async (_description, backendResponse, status) => {
+    client.getGame.mockResolvedValue(backendResponse);
 
     const response = await fetch(`${baseUrl}/api/v1/games/7`);
 
-    expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({ code: "GAME_NOT_FOUND" });
+    expect(response.status).toBe(status);
+    expect(response.headers.get("content-type")).toMatch(/^application\/json/);
+    expect(await response.json()).toEqual(JSON.parse(backendResponse.body));
   });
 
   test("surfaces backend transport failures as a 502 response", async () => {
@@ -160,7 +181,100 @@ describe("BFF routes", () => {
     const response = await fetch(`${baseUrl}/api/v1/games`);
 
     expect(response.status).toBe(502);
-    expect(await response.json()).toEqual({ error: "Backend request failed" });
+    expect(await response.json()).toEqual({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "The backend request could not be completed.",
+      details: [],
+    });
+  });
+
+  test.each([
+    [
+      "malformed JSON",
+      {
+        status: 400,
+        contentType: "application/json",
+        location: null,
+        body: "{",
+      },
+    ],
+    [
+      "an invalid ApiError shape",
+      {
+        status: 404,
+        contentType: "application/json",
+        location: null,
+        body: '{"code":"GAME_NOT_FOUND"}',
+      },
+    ],
+    [
+      "a non-JSON error response",
+      {
+        status: 400,
+        contentType: "text/plain",
+        location: null,
+        body: JSON.stringify({
+          code: "INVALID_REQUEST",
+          message: "Bad request",
+          details: [],
+        }),
+      },
+    ],
+    [
+      "a downstream server error",
+      {
+        status: 500,
+        contentType: "application/json",
+        location: null,
+        body: JSON.stringify({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Private backend implementation details",
+          details: [],
+        }),
+      },
+    ],
+    [
+      "an unexpected redirect",
+      {
+        status: 302,
+        contentType: "text/plain",
+        location: "/private",
+        body: "redirect",
+      },
+    ],
+  ])("maps %s to a generic 502 ApiError", async (_description, backendResponse) => {
+    client.getGame.mockResolvedValue(backendResponse);
+
+    const response = await fetch(`${baseUrl}/api/v1/games/7`);
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "The backend request could not be completed.",
+      details: [],
+    });
+  });
+
+  test("maps unexpected backend client failures without exposing their messages", async () => {
+    const errorLog = jest.spyOn(console, "error").mockImplementation(() => {});
+    client.getConsoles.mockRejectedValue(new Error("private backend detail"));
+
+    try {
+      const response = await fetch(`${baseUrl}/api/v1/consoles`);
+
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "The backend request could not be completed.",
+        details: [],
+      });
+      expect(errorLog).toHaveBeenCalledWith(
+        "Unexpected BFF backend client failure",
+        expect.any(Error),
+      );
+    } finally {
+      errorLog.mockRestore();
+    }
   });
 
   test.each([
@@ -175,6 +289,11 @@ describe("BFF routes", () => {
     const response = await fetch(`${baseUrl}${path}`);
 
     expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      code: "INVALID_REQUEST",
+      message: "Request contains invalid values.",
+      details: [],
+    });
     expect(client.getGames).not.toHaveBeenCalled();
   });
 
@@ -224,5 +343,74 @@ describe("BFF routes", () => {
     ]);
     expect(client.createGame).not.toHaveBeenCalled();
     expect(client.replaceGame).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    {
+      name: "game search",
+      path: "/api/v1/games",
+      method: "GET" as const,
+      configure: (backendClient: jest.Mocked<BackendClient>, response: BackendResponse) =>
+        backendClient.getGames.mockResolvedValue(response),
+    },
+    {
+      name: "game creation",
+      path: "/api/v1/games",
+      method: "POST" as const,
+      configure: (backendClient: jest.Mocked<BackendClient>, response: BackendResponse) =>
+        backendClient.createGame.mockResolvedValue(response),
+    },
+    {
+      name: "game retrieval",
+      path: "/api/v1/games/7",
+      method: "GET" as const,
+      configure: (backendClient: jest.Mocked<BackendClient>, response: BackendResponse) =>
+        backendClient.getGame.mockResolvedValue(response),
+    },
+    {
+      name: "game replacement",
+      path: "/api/v1/games/7",
+      method: "PUT" as const,
+      configure: (backendClient: jest.Mocked<BackendClient>, response: BackendResponse) =>
+        backendClient.replaceGame.mockResolvedValue(response),
+    },
+    {
+      name: "game deletion",
+      path: "/api/v1/games/7",
+      method: "DELETE" as const,
+      configure: (backendClient: jest.Mocked<BackendClient>, response: BackendResponse) =>
+        backendClient.deleteGame.mockResolvedValue(response),
+    },
+    {
+      name: "console catalog",
+      path: "/api/v1/consoles",
+      method: "GET" as const,
+      configure: (backendClient: jest.Mocked<BackendClient>, response: BackendResponse) =>
+        backendClient.getConsoles.mockResolvedValue(response),
+    },
+  ])("maps downstream server failures consistently for $name", async (route) => {
+    route.configure(client, {
+      status: 503,
+      contentType: "application/json",
+      location: null,
+      body: '{"message":"private backend detail"}',
+    });
+
+    const response = await fetch(`${baseUrl}${route.path}`, {
+      method: route.method,
+      ...(route.method === "POST" || route.method === "PUT"
+        ? {
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: "Example" }),
+          }
+        : {}),
+    });
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "The backend request could not be completed.",
+      details: [],
+    });
   });
 });

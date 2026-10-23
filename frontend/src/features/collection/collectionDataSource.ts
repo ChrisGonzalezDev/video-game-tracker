@@ -20,6 +20,7 @@ export interface CollectionDataSource {
   getConsoles(): Promise<Console[]>;
   createGame(game: GameWrite): Promise<Game>;
   updateGame(id: number, game: GameWrite): Promise<Game>;
+  deleteGame(id: number): Promise<void>;
 }
 
 export const fixtureCollection: GamePage = {
@@ -209,6 +210,20 @@ export function createFixtureCollectionDataSource(
       items[index] = updated;
       collection = { ...collection, items };
       return copyGame(updated);
+    },
+    deleteGame: async (id) => {
+      const items = collection.items.filter((item) => item.id !== id);
+      if (items.length === collection.items.length) {
+        throw new Error(`Game ${id} was not found.`);
+      }
+
+      const totalItems = Math.max(0, collection.totalItems - 1);
+      collection = {
+        ...collection,
+        items,
+        totalItems,
+        totalPages: Math.ceil(totalItems / collection.size),
+      };
     },
   };
 }

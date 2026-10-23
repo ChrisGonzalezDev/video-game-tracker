@@ -80,7 +80,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Backend responses and failures are translated into predictable BFF responses for the frontend.
 - **Completion check:** Tests cover successful response transformation and representative downstream error mappings.
 
-### 3.3 Connect the frontend to the BFF
+### 3.3 Connect the frontend to the BFF [Complete]
 
 - **Outcome:** Collection reads and game mutations flow through TanStack Query and the BFF.
 - **Completion check:** Frontend and BFF integration tests verify requests, cache updates or invalidation, and visible error handling.

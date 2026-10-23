@@ -102,4 +102,20 @@ describe("backend client", () => {
       createBackendClient("http://backend.test/api/v1", request).getGame(1),
     ).rejects.toThrow("The backend request failed.");
   });
+
+  test("exposes response body read failures as transport errors", async () => {
+    const response = new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.error(new Error("response body failed"));
+        },
+      }),
+      { status: 200 },
+    );
+    const request = jest.fn<typeof fetch>().mockResolvedValue(response);
+
+    await expect(
+      createBackendClient("http://backend.test/api/v1", request).getGame(1),
+    ).rejects.toThrow("The backend request failed.");
+  });
 });

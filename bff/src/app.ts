@@ -10,6 +10,11 @@ import {
   type BackendResponse,
   type JsonObject,
 } from "./backend-client.js";
+import {
+  createBadGatewayResponse,
+  normalizeBackendResponse,
+  type ApiError,
+} from "./backend-response.js";
 
 const ratings = new Set(["EC", "E", "E10+", "T", "M", "AO", "RP"]);
 const queryParameters = new Set([
@@ -25,7 +30,19 @@ const queryParameters = new Set([
 ]);
 
 function invalidRequest(response: Response): void {
-  response.status(400).json({ error: "Invalid request" });
+  sendApiError(response, 400, {
+    code: "INVALID_REQUEST",
+    message: "Request contains invalid values.",
+    details: [],
+  });
+}
+
+function sendApiError(
+  response: Response,
+  status: number,
+  error: ApiError,
+): void {
+  response.status(status).json(error);
 }
 
 function parseSearchQuery(request: Request): URLSearchParams | undefined {
@@ -158,6 +175,20 @@ function sendBackendResponse(
   response.send(backendResponse.body);
 }
 
+async function requestBackendResponse(
+  operation: () => Promise<BackendResponse>,
+): Promise<BackendResponse> {
+  try {
+    return normalizeBackendResponse(await operation());
+  } catch (error) {
+    if (!(error instanceof BackendTransportError)) {
+      console.error("Unexpected BFF backend client failure", error);
+      throw new BackendTransportError(error);
+    }
+    throw error;
+  }
+}
+
 export function createApp(backendClient: BackendClient = createBackendClient()) {
   const app = express();
   app.use(express.json());
@@ -172,7 +203,10 @@ export function createApp(backendClient: BackendClient = createBackendClient()) 
       invalidRequest(response);
       return;
     }
-    sendBackendResponse(response, await backendClient.getGames(query));
+    sendBackendResponse(
+      response,
+      await requestBackendResponse(() => backendClient.getGames(query)),
+    );
   });
 
   app.post("/api/v1/games", async (request, response) => {
@@ -181,7 +215,10 @@ export function createApp(backendClient: BackendClient = createBackendClient()) 
       invalidRequest(response);
       return;
     }
-    sendBackendResponse(response, await backendClient.createGame(body));
+    sendBackendResponse(
+      response,
+      await requestBackendResponse(() => backendClient.createGame(body)),
+    );
   });
 
   app.get("/api/v1/games/:id", async (request, response) => {
@@ -190,7 +227,10 @@ export function createApp(backendClient: BackendClient = createBackendClient()) 
       invalidRequest(response);
       return;
     }
-    sendBackendResponse(response, await backendClient.getGame(id));
+    sendBackendResponse(
+      response,
+      await requestBackendResponse(() => backendClient.getGame(id)),
+    );
   });
 
   app.put("/api/v1/games/:id", async (request, response) => {
@@ -200,7 +240,10 @@ export function createApp(backendClient: BackendClient = createBackendClient()) 
       invalidRequest(response);
       return;
     }
-    sendBackendResponse(response, await backendClient.replaceGame(id, body));
+    sendBackendResponse(
+      response,
+      await requestBackendResponse(() => backendClient.replaceGame(id, body)),
+    );
   });
 
   app.delete("/api/v1/games/:id", async (request, response) => {
@@ -209,16 +252,22 @@ export function createApp(backendClient: BackendClient = createBackendClient()) 
       invalidRequest(response);
       return;
     }
-    sendBackendResponse(response, await backendClient.deleteGame(id));
+    sendBackendResponse(
+      response,
+      await requestBackendResponse(() => backendClient.deleteGame(id)),
+    );
   });
 
   app.get("/api/v1/consoles", async (_request, response) => {
-    sendBackendResponse(response, await backendClient.getConsoles());
+    sendBackendResponse(
+      response,
+      await requestBackendResponse(() => backendClient.getConsoles()),
+    );
   });
 
   const handleErrors: ErrorRequestHandler = (error, _request, response, _next) => {
     if (error instanceof BackendTransportError) {
-      response.status(502).json({ error: "Backend request failed" });
+      sendBackendResponse(response, createBadGatewayResponse());
       return;
     }
 
@@ -233,7 +282,15 @@ export function createApp(backendClient: BackendClient = createBackendClient()) 
     }
 
     console.error("Unexpected BFF request failure", error);
-    response.status(500).json({ error: "Internal server error" });
+    sendApiError(
+      response,
+      500,
+      {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "An unexpected error occurred.",
+        details: [],
+      },
+    );
   };
   app.use(handleErrors);
 

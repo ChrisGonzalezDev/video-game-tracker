@@ -84,6 +84,14 @@ when the backend uses a different host or port. Build with `npm run build` and
 run the BFF Jest tests with `npm test`. For the compiled production entry point,
 run `npm start` after `npm run build`.
 
+Successful downstream responses retain their status, body, and relevant
+headers. Valid downstream 4xx responses use the OpenAPI `ApiError` shape
+(`code`, `message`, and `details`) and retain their status. Invalid downstream
+error responses and backend failures return HTTP 502 with a generic
+`INTERNAL_SERVER_ERROR` `ApiError`; backend details are not sent to callers.
+Requests rejected by the BFF return HTTP 400 with an `INVALID_REQUEST`
+`ApiError`.
+
 ### Backend
 
 From `backend/`, build with `./mvnw package` and start with `./mvnw spring-boot:run`. On Windows, use `mvnw.cmd package` and `mvnw.cmd spring-boot:run`. The Spring Boot Actuator health endpoint is `http://localhost:8080/actuator/health`; it does not require PostgreSQL. The build requires JDK 17.

@@ -75,7 +75,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** The Express BFF exposes the frontend-facing routes and communicates with the Spring Boot API.
 - **Completion check:** BFF tests verify request handling, input validation, and downstream client behavior.
 
-### 3.2 Map backend responses and errors
+### 3.2 Map backend responses and errors [Complete]
 
 - **Outcome:** Backend responses and failures are translated into predictable BFF responses for the frontend.
 - **Completion check:** Tests cover successful response transformation and representative downstream error mappings.

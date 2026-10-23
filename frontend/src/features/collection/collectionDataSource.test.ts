@@ -116,6 +116,22 @@ describe("fixture collection data source", () => {
     );
   });
 
+  it("deletes games and updates collection metadata", async () => {
+    const source = createFixtureCollectionDataSource();
+    const deletedId = fixtureCollection.items[0].id;
+
+    await source.deleteGame(deletedId);
+
+    await expect(source.getGame(deletedId)).resolves.toBeUndefined();
+    await expect(source.getCollection()).resolves.toMatchObject({
+      totalItems: fixtureCollection.totalItems - 1,
+      totalPages: 1,
+    });
+    await expect(source.deleteGame(404)).rejects.toThrow(
+      "Game 404 was not found.",
+    );
+  });
+
   it("searches titles and comments case-insensitively and applies filters", async () => {
     const source = createFixtureCollectionDataSource(pageFromGames(queryGames));
 

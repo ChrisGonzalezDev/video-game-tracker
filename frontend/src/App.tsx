@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import {
+  QueryClient,
+  QueryClientProvider,
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   Alert,
   Box,
@@ -10,6 +18,11 @@ import {
   CircularProgress,
   Container,
   CssBaseline,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Stack,
   ThemeProvider,
   Typography,
@@ -23,10 +36,10 @@ import CollectionControls, {
 } from "./features/collection/CollectionControls";
 import GameForm from "./features/collection/GameForm";
 import {
-  fixtureCollectionDataSource,
   type CollectionQuery,
   type CollectionDataSource,
 } from "./features/collection/collectionDataSource";
+import { bffCollectionDataSource } from "./features/collection/bffCollectionDataSource";
 import type {
   Console,
   Game,
@@ -58,6 +71,11 @@ type Screen =
   | { view: "form-error"; mode: FormMode; game?: Game }
   | { view: "create"; consoles: Console[] }
   | { view: "edit"; game: Game; consoles: Console[] };
+
+const collectionQueryKey = (query: CollectionQuery) =>
+  ["collection", query] as const;
+const gameQueryKey = (id: number) => ["game", id] as const;
+const consolesQueryKey = ["consoles"] as const;
 
 const theme = createTheme({
   palette: {
@@ -290,10 +308,12 @@ function GameDetails({
   game,
   onBack,
   onEdit,
+  onDelete,
 }: {
   game: Game;
   onBack: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   return (
     <Stack spacing={3}>
@@ -305,9 +325,14 @@ function GameDetails({
         <Button variant="outlined" onClick={onBack}>
           Back to collection
         </Button>
-        <Button variant="contained" onClick={onEdit}>
-          Edit game
-        </Button>
+        <Stack direction="row" spacing={1.5}>
+          <Button color="error" variant="outlined" onClick={onDelete}>
+            Delete game
+          </Button>
+          <Button variant="contained" onClick={onEdit}>
+            Edit game
+          </Button>
+        </Stack>
       </Stack>
 
       {game.coverImageUrl && (
@@ -396,89 +421,84 @@ function CollectionApp({
 }: {
   collectionDataSource: CollectionDataSource;
 }) {
-  const [collectionState, setCollectionState] = useState<CollectionState>({
-    status: "loading",
-  });
   const [screen, setScreen] = useState<Screen>({ view: "collection" });
-  const [attempt, setAttempt] = useState(0);
-  const [queryAttempt, setQueryAttempt] = useState(0);
   const [criteria, setCriteria] = useState(defaultCollectionControls);
-  const [consoleOptions, setConsoleOptions] = useState<Console[]>([]);
-  const [queryError, setQueryError] = useState(false);
-  const [queryPending, setQueryPending] = useState(false);
-  const hasLoadedCollection = useRef(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const invalidPlayerCriteria = hasInvalidPlayerCriteria(criteria);
+  const collectionRequest = toCollectionQuery(criteria);
+  const allGamesRequest = toCollectionQuery(defaultCollectionControls);
 
-  useEffect(() => {
-    let isCurrent = true;
-    const isInitialLoad = !hasLoadedCollection.current;
-    if (hasInvalidPlayerCriteria(criteria)) {
-      setQueryPending(false);
-      setQueryError(false);
-      return () => {
-        isCurrent = false;
-      };
-    }
+  const collectionQuery = useQuery({
+    queryKey: collectionQueryKey(collectionRequest),
+    queryFn: () => collectionDataSource.getCollection(collectionRequest),
+    enabled: !invalidPlayerCriteria,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+  const allGamesQuery = useQuery({
+    queryKey: collectionQueryKey(allGamesRequest),
+    queryFn: () => collectionDataSource.getCollection(allGamesRequest),
+    enabled: !invalidPlayerCriteria,
+    retry: false,
+  });
+  const consolesQuery = useQuery({
+    queryKey: consolesQueryKey,
+    queryFn: () => collectionDataSource.getConsoles(),
+    retry: false,
+  });
 
-    if (isInitialLoad) {
-      setCollectionState({ status: "loading" });
-    } else {
-      setQueryPending(true);
-    }
-    setQueryError(false);
-
-    async function loadCollection() {
-      try {
-        const collection = await collectionDataSource.getCollection(
-          toCollectionQuery(criteria),
-        );
-        if (isInitialLoad) {
-          const consoles = await collectionDataSource.getConsoles();
-          if (isCurrent) {
-            hasLoadedCollection.current = true;
-            setConsoleOptions(consoles);
-            setCollectionState({
-              status: "success",
-              collection,
-              totalCollectionItems: collection.totalItems,
-            });
+  const collectionState: CollectionState =
+    (!collectionQuery.data && collectionQuery.isError) ||
+    (!allGamesQuery.data && allGamesQuery.isError)
+      ? { status: "error" }
+      : collectionQuery.data
+        ? {
+            status: "success",
+            collection: collectionQuery.data,
+            totalCollectionItems:
+              allGamesQuery.data?.totalItems ?? collectionQuery.data.totalItems,
           }
-        } else if (isCurrent) {
-          setCollectionState((current) =>
-            current.status === "success"
-              ? { ...current, collection }
-              : {
-                  status: "success",
-                  collection,
-                  totalCollectionItems: collection.totalItems,
-                },
-          );
-        }
-      } catch {
-        if (isCurrent) {
-          if (isInitialLoad) {
-            setCollectionState({ status: "error" });
-          } else {
-            setQueryError(true);
-          }
-        }
-      } finally {
-        if (isCurrent) {
-          setQueryPending(false);
-        }
-      }
-    }
+        : { status: "loading" };
+  const consoleOptions = consolesQuery.data ?? [];
+  const queryError =
+    (collectionQuery.isError && collectionQuery.data !== undefined) ||
+    (allGamesQuery.isError && allGamesQuery.data !== undefined);
+  const queryPending = collectionQuery.isFetching;
 
-    void loadCollection();
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [attempt, criteria, collectionDataSource, queryAttempt]);
+  const createMutation = useMutation({
+    mutationFn: (game: GameWrite) => collectionDataSource.createGame(game),
+    onSuccess: async (game) => {
+      queryClient.setQueryData(gameQueryKey(game.id), game);
+      await queryClient.invalidateQueries({ queryKey: ["collection"] });
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, game }: { id: number; game: GameWrite }) =>
+      collectionDataSource.updateGame(id, game),
+    onSuccess: async (game) => {
+      queryClient.setQueryData(gameQueryKey(game.id), game);
+      await queryClient.invalidateQueries({ queryKey: ["collection"] });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => collectionDataSource.deleteGame(id),
+    onSuccess: async (_result, id) => {
+      queryClient.removeQueries({ queryKey: gameQueryKey(id) });
+      setCriteria((current) => ({ ...current, page: 0 }));
+      await queryClient.invalidateQueries({ queryKey: ["collection"] });
+      setDeleteDialogOpen(false);
+      setScreen({ view: "collection" });
+    },
+  });
 
   async function openGame(id: number) {
     setScreen({ view: "detail-loading" });
     try {
-      const game = await collectionDataSource.getGame(id);
+      const game = await queryClient.fetchQuery({
+        queryKey: gameQueryKey(id),
+        queryFn: () => collectionDataSource.getGame(id),
+      });
       if (game) {
         setScreen({ view: "detail", game });
       } else {
@@ -498,7 +518,10 @@ function CollectionApp({
   async function openForm(mode: FormMode, game?: Game) {
     setScreen({ view: "form-loading", mode, game });
     try {
-      const consoles = await collectionDataSource.getConsoles();
+      const consoles = await queryClient.fetchQuery({
+        queryKey: consolesQueryKey,
+        queryFn: () => collectionDataSource.getConsoles(),
+      });
       if (mode === "create") {
         setScreen({ view: "create", consoles });
       } else if (game) {
@@ -510,24 +533,7 @@ function CollectionApp({
   }
 
   async function createGame(write: GameWrite) {
-    const created = await collectionDataSource.createGame(write);
-    try {
-      const collection = await collectionDataSource.getCollection(
-        toCollectionQuery(criteria),
-      );
-      setCollectionState((current) =>
-        current.status === "success"
-          ? {
-              ...current,
-              collection,
-              totalCollectionItems: current.totalCollectionItems + 1,
-            }
-          : current,
-      );
-      setQueryError(false);
-    } catch {
-      setQueryError(true);
-    }
+    const created = await createMutation.mutateAsync(write);
     setScreen({ view: "detail", game: created });
   }
 
@@ -535,18 +541,10 @@ function CollectionApp({
     if (screen.view !== "edit") {
       throw new Error("The game being edited is no longer available.");
     }
-    const updated = await collectionDataSource.updateGame(screen.game.id, write);
-    try {
-      const collection = await collectionDataSource.getCollection(
-        toCollectionQuery(criteria),
-      );
-      setCollectionState((current) =>
-        current.status === "success" ? { ...current, collection } : current,
-      );
-      setQueryError(false);
-    } catch {
-      setQueryError(true);
-    }
+    const updated = await updateMutation.mutateAsync({
+      id: screen.game.id,
+      game: write,
+    });
     setScreen({ view: "detail", game: updated });
   }
 
@@ -644,9 +642,26 @@ function CollectionApp({
 
         {screen.view === "collection" && (
           <Box component="section" aria-label="Game collection">
+            {consolesQuery.isError && (
+              <Alert
+                severity="error"
+                sx={{ mb: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => void consolesQuery.refetch()}
+                  >
+                    Try again
+                  </Button>
+                }
+              >
+                We couldn’t load supported consoles. Please try again.
+              </Alert>
+            )}
             <CollectionContents
               state={collectionState}
-              onRetry={() => setAttempt((current) => current + 1)}
+              onRetry={() => void collectionQuery.refetch()}
               onOpenGame={(id) => void openGame(id)}
               criteria={criteria}
               consoles={consoleOptions}
@@ -655,9 +670,9 @@ function CollectionApp({
                 setCriteria((current) => ({ ...current, page }))
               }
               queryError={queryError}
-              onRetryQuery={() => setQueryAttempt((current) => current + 1)}
+              onRetryQuery={() => void collectionQuery.refetch()}
               queryPending={queryPending}
-              invalidPlayerCriteria={hasInvalidPlayerCriteria(criteria)}
+              invalidPlayerCriteria={invalidPlayerCriteria}
             />
           </Box>
         )}
@@ -683,7 +698,54 @@ function CollectionApp({
             game={screen.game}
             onBack={returnToCollection}
             onEdit={() => void openForm("edit", screen.game)}
+            onDelete={() => {
+              deleteMutation.reset();
+              setDeleteDialogOpen(true);
+            }}
           />
+        )}
+
+        {screen.view === "detail" && (
+          <Dialog
+            open={deleteDialogOpen}
+            onClose={() => {
+              deleteMutation.reset();
+              setDeleteDialogOpen(false);
+            }}
+            aria-labelledby="delete-game-title"
+          >
+            <DialogTitle id="delete-game-title">Delete game?</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                Delete {screen.game.title} from your collection? This action
+                cannot be undone.
+              </DialogContentText>
+              {deleteMutation.isError && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  We couldn’t delete this game. Please try again.
+                </Alert>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => {
+                  deleteMutation.reset();
+                  setDeleteDialogOpen(false);
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                Cancel deletion
+              </Button>
+              <Button
+                color="error"
+                variant="contained"
+                onClick={() => deleteMutation.mutate(screen.game.id)}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Deleting…" : "Confirm deletion"}
+              </Button>
+            </DialogActions>
+          </Dialog>
         )}
 
         {screen.view === "form-loading" && (
@@ -743,12 +805,25 @@ function CollectionApp({
 }
 
 export default function App({
-  collectionDataSource = fixtureCollectionDataSource,
+  collectionDataSource = bffCollectionDataSource,
 }: AppProps) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+          },
+        },
+      }),
+  );
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <CollectionApp collectionDataSource={collectionDataSource} />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <CollectionApp collectionDataSource={collectionDataSource} />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

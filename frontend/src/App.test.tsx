@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { jest } from "@jest/globals";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
@@ -43,6 +43,12 @@ function createDataSource(
     ...createFixtureCollectionDataSource(initialCollection),
     ...overrides,
   };
+}
+
+function renderFixtureApp() {
+  return render(
+    <App collectionDataSource={createFixtureCollectionDataSource()} />,
+  );
 }
 
 describe("collection view", () => {
@@ -108,7 +114,7 @@ describe("collection view", () => {
 
   it("searches by title and comments, shows no matches, and clears criteria", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderFixtureApp();
 
     const search = await screen.findByRole("searchbox", { name: "Search games" });
     fireEvent.change(search, { target: { value: "weekend co-op" } });
@@ -118,7 +124,7 @@ describe("collection view", () => {
         name: "View details for Starfall Tactics",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("1 game")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("1 game")).toBeInTheDocument());
 
     fireEvent.change(search, { target: { value: "no matching game" } });
     expect(
@@ -140,7 +146,7 @@ describe("collection view", () => {
   });
 
   it("combines console, rating, and player filters", async () => {
-    render(<App />);
+    renderFixtureApp();
     await screen.findByRole("button", { name: "Add game" });
 
     fireEvent.mouseDown(screen.getByRole("combobox", { name: "Consoles" }));
@@ -212,7 +218,7 @@ describe("collection view", () => {
 
   it("sorts the collection by release year in either direction", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderFixtureApp();
     await screen.findByRole("button", { name: "Add game" });
 
     await user.click(screen.getByRole("combobox", { name: "Sort by" }));

@@ -1,5 +1,6 @@
 const { TestEnvironment: JSDOMEnvironment } = require("jest-environment-jsdom");
 const { TextDecoder, TextEncoder } = require("node:util");
+const { BroadcastChannel } = require("node:worker_threads");
 const {
   ReadableStream,
   TransformStream,
@@ -13,6 +14,7 @@ class JSDOMEnvironmentWithFetch extends JSDOMEnvironment {
     const polyfills = {
       fetch: globalThis.fetch,
       Headers: globalThis.Headers,
+      BroadcastChannel: globalThis.BroadcastChannel ?? BroadcastChannel,
       ReadableStream,
       Request: globalThis.Request,
       Response: globalThis.Response,

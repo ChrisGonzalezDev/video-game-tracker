@@ -97,7 +97,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** The frontend, BFF, backend, and PostgreSQL can run as a local demonstration stack with migrations, sample data, and health checks.
 - **Completion check:** A clean environment starts with the documented Compose command, services communicate by Compose service names, and the documented stop procedure works.
 
-### 4.3 Verify critical user workflows end to end
+### 4.3 Verify critical user workflows end to end [Complete]
 
 - **Outcome:** Browser tests cover the core collection-management experience.
 - **Completion check:** Playwright verifies creating and viewing a game, searching/filtering the collection, editing details, deleting a game, and handling API errors.

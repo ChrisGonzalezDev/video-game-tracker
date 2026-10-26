@@ -157,6 +157,28 @@ These checks require JDK 17 or newer, Node.js 22.12 or newer, npm, and Docker
 with a working Docker Engine. The tests create and clean up their own
 containers and service processes.
 
+### Browser end-to-end tests
+
+Run the full-stack Compose environment from the repository root before running
+the browser suite. From `frontend/`, install dependencies and the Chromium
+browser once, then run the Playwright tests:
+
+```powershell
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+The suite uses the frontend at `http://localhost:3000` by default. Set
+`PLAYWRIGHT_BASE_URL` to target another accessible frontend URL. Normal game
+workflows run through the browser and BFF; the API-error check uses Playwright
+request routing to simulate a service failure. The collection workflow creates
+a uniquely named game and deletes it after the test, including when assertions
+fail. If a test process is forcibly terminated, inspect the collection for any
+test game left behind before removing it. Do not stop the Compose stack with
+`docker compose down --volumes`, since that deletes the persistent local
+database.
+
 ## Cross-cutting conventions
 
 - Keep the React SPA, Express BFF, Spring Boot API, and PostgreSQL responsibilities separate.
@@ -167,4 +189,4 @@ containers and service processes.
 - Keep AI-generated metadata optional and subject to user review and confirmation before saving.
 - Prefer accessible, responsive behavior and consistent validation and error handling.
 
-The frontend, BFF, and backend module commands documented above are runnable. The full-stack local Compose environment, backend `local` profile, and PostgreSQL persistence integration tests are implemented. End-to-end browser tests and CI examples remain planned until their corresponding files and configuration exist.
+The frontend, BFF, and backend module commands documented above are runnable. The full-stack local Compose environment, backend `local` profile, PostgreSQL persistence integration tests, and Chromium Playwright browser suite are implemented. GitHub Actions CI examples remain planned.

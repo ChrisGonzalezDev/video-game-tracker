@@ -1,6 +1,6 @@
 # Roadmap
 
-Implement the core collection workflow before optional AI-assisted metadata. Phases follow the README's foundation, backend, frontend, BFF, and full-stack integration sequence. Each phase has a focused outcome and a completion check.
+Implement the core collection workflow and repository publication readiness before optional improvements. Phases follow the README's foundation, backend, frontend, BFF, and full-stack integration sequence. Each phase has a focused outcome and a completion check.
 
 ## Phase 0 — Foundation
 
@@ -102,19 +102,33 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Browser tests cover the core collection-management experience.
 - **Completion check:** Playwright verifies creating and viewing a game, searching/filtering the collection, editing details, deleting a game, and handling API errors.
 
-### 4.4 Enforce continuous integration quality gates
+## Phase 5 — Repository publication readiness
+
+### 5.1 Choose and add a project license
+
+- **Outcome:** The repository includes a license that reflects the maintainer's intended permissions and is compatible with included assets and data.
+- **Completion check:** A license is selected, added to the repository, and referenced from the README.
+
+### 5.2 Bring project status and README documentation up to date
+
+- **Outcome:** The README accurately describes the current project status, implemented capabilities, and planned work.
+- **Completion check:** README status, feature descriptions, roadmap references, and setup guidance agree with the current repository.
+
+## Phase 6 — Optional CI quality gates
+
+### 6.1 Enforce continuous integration quality gates
 
 - **Outcome:** GitHub Actions runs the relevant build, test, contract, and container checks for pushes and pull requests.
 - **Completion check:** Required checks pass on the main branch, and merging is gated on the configured required checks.
 
-## Phase 5 — Optional AI-assisted entry
+## Phase 7 — Optional AI-assisted entry
 
-### 5.1 Decide AI provider and integration boundaries
+### 7.1 Decide AI provider and integration boundaries
 
 - **Outcome:** The provider, configuration requirements, and failure behavior are decided before implementation.
 - **Completion check:** The selected approach is documented, including how secrets are configured and how provider failures are surfaced.
 
-### 5.2 Propose and validate game metadata
+### 7.2 Propose and validate game metadata
 
 - **Outcome:** A user can request metadata suggestions from a title or description, review and edit the proposal, and explicitly confirm before saving.
 - **Completion check:** Tests verify suggestions are validated, remain editable, are never saved without user confirmation, and degrade clearly when the provider is unavailable.

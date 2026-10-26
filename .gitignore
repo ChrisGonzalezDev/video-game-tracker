@@ -4,4 +4,6 @@ node_modules/
 dist/
 target/
 *.tsbuildinfo
+/frontend/playwright-report/
+/frontend/test-results/
 .env

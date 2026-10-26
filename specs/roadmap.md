@@ -104,7 +104,7 @@ Implement the core collection workflow and repository publication readiness befo
 
 ## Phase 5 — Repository publication readiness
 
-### 5.1 Choose and add a project license
+### 5.1 Choose and add a project license [Complete]
 
 - **Outcome:** The repository includes a license that reflects the maintainer's intended permissions and is compatible with included assets and data.
 - **Completion check:** A license is selected, added to the repository, and referenced from the README.

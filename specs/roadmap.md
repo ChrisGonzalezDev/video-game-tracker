@@ -92,7 +92,7 @@ Implement the core collection workflow before optional AI-assisted metadata. Pha
 - **Outcome:** Backend persistence and BFF-to-backend communication are verified together.
 - **Completion check:** Integration tests exercise REST endpoints and persistence against PostgreSQL, with OpenAPI compatibility checks.
 
-### 4.2 Complete the Docker Compose environment
+### 4.2 Complete the Docker Compose environment [Complete]
 
 - **Outcome:** The frontend, BFF, backend, and PostgreSQL can run as a local demonstration stack with migrations, sample data, and health checks.
 - **Completion check:** A clean environment starts with the documented Compose command, services communicate by Compose service names, and the documented stop procedure works.

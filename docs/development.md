@@ -1,6 +1,6 @@
 # Development Workflow
 
-The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF starter scaffolds use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The local PostgreSQL service is database-only; the backend has game and console CRUD plus collection search, and the frontend has fixture-backed collection search and filtering. Live frontend-to-BFF collection behavior remains planned.
+The repository is being built incrementally. Follow this feature-oriented workflow as application modules and their verification commands are introduced. The frontend and BFF use Node.js 22.12 or newer; the backend targets JDK 17 and Spring Boot 3.5 with Maven Wrapper. The full-stack local Compose environment runs the frontend, BFF, backend, and PostgreSQL together. Application modules can still be started independently for development.
 
 ## Feature workflow
 
@@ -15,11 +15,11 @@ The repository is being built incrementally. Follow this feature-oriented workfl
 
 ## Running the starter modules
 
-Install Node.js 22.12 or newer, npm, and JDK 17 or newer (the backend targets Java 17). Maven is provided by the checked-in wrapper; a separate Maven installation is not required. Docker Engine or Docker Desktop with the Compose plugin is required only for the optional local database. Each application module can still be started without the other modules or PostgreSQL.
+Install Node.js 22.12 or newer, npm, and JDK 17 or newer (the backend targets Java 17). Maven is provided by the checked-in wrapper; a separate Maven installation is not required. Docker Engine or Docker Desktop with the Compose plugin is required for the local Compose environment. Each application module can still be started without the other modules or PostgreSQL.
 
 ### Local PostgreSQL database
 
-The root `compose.yaml` starts PostgreSQL only; it does not start the frontend, BFF, or backend. It uses the pinned `postgres:17.6-alpine` image, publishes port `5432`, and stores data in the named `postgres-data` volume. This is the Phase 0.3 development database setup, not the planned Phase 4.2 full-stack Compose environment.
+The root `compose.yaml` defines PostgreSQL and the full-stack local demonstration. To start only PostgreSQL for module development, select the database service; it uses the pinned `postgres:17.6-alpine` image, publishes the configured host port (default `5432`), and stores data in the named `postgres-data` volume.
 
 From the repository root, create the ignored local environment file and replace the username and password placeholders with values for local development:
 
@@ -64,6 +64,31 @@ Set-Location backend
 When `local` is not active, the backend does not configure or require a datasource and can start with PostgreSQL stopped. Stop PostgreSQL normally with `docker compose down`; this preserves `postgres-data`. **Removing the volume permanently deletes all local database data:** only use `docker compose down --volumes` when that data can be discarded.
 
 The environment variables, Compose setup, and backend datasource properties are local development settings, not production configuration.
+
+### Full-stack local demonstration
+
+From the repository root, create the ignored local environment file and replace the credential placeholders with local values:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Start the frontend, BFF, backend, PostgreSQL, migrations, and demo data with one command:
+
+```powershell
+docker compose up -d --build --wait
+docker compose ps
+```
+
+The frontend is available at `http://localhost:3000`. It proxies `/api` requests to the BFF at `http://localhost:3001`; the BFF reaches the backend using the Compose service name `backend`, and the backend connects to `postgres`. The backend health endpoint is `http://localhost:8080/actuator/health`. PostgreSQL is available to host tools at `localhost:<POSTGRES_PORT>` (default `5432`).
+
+Compose waits for PostgreSQL and the migrated backend to become healthy before running the idempotent demo-data seed and starting the BFF and frontend. The collection includes three demo games on first startup. Normal shutdown preserves both the demo games and any collection changes:
+
+```powershell
+docker compose down
+```
+
+Do not add `--volumes` unless you intend to permanently delete the local database. To start the full stack again, run the same `docker compose up -d --build --wait` command.
 
 ### Frontend
 
@@ -142,4 +167,4 @@ containers and service processes.
 - Keep AI-generated metadata optional and subject to user review and confirmation before saving.
 - Prefer accessible, responsive behavior and consistent validation and error handling.
 
-The frontend, BFF, and backend scaffold commands documented above are runnable. The database-only Compose setup, backend `local` profile, and PostgreSQL persistence integration tests are implemented. Treat the full-stack Compose environment, end-to-end tests, and CI examples in the README as planned until their corresponding files and configuration exist.
+The frontend, BFF, and backend module commands documented above are runnable. The full-stack local Compose environment, backend `local` profile, and PostgreSQL persistence integration tests are implemented. End-to-end browser tests and CI examples remain planned until their corresponding files and configuration exist.

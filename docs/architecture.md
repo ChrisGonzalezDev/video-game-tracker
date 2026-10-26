@@ -1,13 +1,13 @@
 # Architecture and Repository Layout
 
-This guide describes the intended architecture and distinguishes it from what is currently present. The frontend, BFF, and backend run independently. The frontend has an accessible collection view with fixture-backed search, filters, sorting, and pagination, plus dedicated game details/create/edit views backed by deterministic in-memory fixtures; live frontend-to-BFF integration remains planned. The BFF exposes the versioned game and console routes and forwards requests to the backend. A database-only local PostgreSQL Compose service is available, and the backend can opt into its datasource with the `local` Spring profile. The backend has an initial Flyway schema, a 96-console catalog seed, game persistence repositories, and the versioned collection API.
+This guide describes the implemented architecture and distinguishes it from planned work. The frontend has an accessible collection view and game details/create/edit views backed by the BFF. The BFF exposes versioned game and console routes and forwards requests to the backend. The root Compose environment can run the frontend, BFF, backend, and PostgreSQL together for local development and demonstration. The backend uses its `local` Spring profile and Flyway migrations to initialize the database, which includes a 96-console catalog and game persistence.
 
 ## Repository layout
 
 | Location | Purpose | Status |
 | --- | --- | --- |
-| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Responsive MUI collection with fixture-backed search, filters, sorting, pagination, game details, and create/edit forms; live BFF integration remains planned |
-| `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Game and console route forwarding, configurable backend client, and health response present; frontend integration and standardized error mapping remain planned |
+| `frontend/` | React and TypeScript single-page application, MUI presentation, feature-oriented UI, and TanStack Query server-state handling | Responsive collection and game forms using the BFF; Docker build produces a static bundle served by Nginx with `/api` proxied to the BFF |
+| `bff/` | Node.js and Express frontend-facing API, request orchestration, backend client, and downstream error mapping | Game and console route forwarding, configurable backend client, health response, and production container build |
 | `backend/` | Java and Spring Boot versioned REST API, validation, application/domain rules, and persistence access | Spring Boot game/console domain, versioned CRUD/search API, Flyway schema, and persistence repositories present |
 | `contracts/` | Maintained OpenAPI contract, Redocly validation package, and contract usage documentation | OpenAPI 3.1 contract for the versioned backend API and Redocly validation workflow present |
 | `backend/src/main/resources/db/migration/` | Backend-owned Flyway schema migrations | Initial games, consoles, and game-console relationship migration plus 96 released-console seed entries present |
@@ -18,7 +18,7 @@ This guide describes the intended architecture and distinguishes it from what is
 | `docs/adr/` | Architecture Decision Records for decisions that warrant a durable rationale | Planned |
 | `.github/workflows/` | GitHub Actions build, test, and quality-check workflows | Planned |
 | `infra/` | Dockerfiles and supporting infrastructure configuration, if needed | Planned |
-| `compose.yaml` | Local PostgreSQL-only Compose service; later extended for the full-stack environment | Database-only service present; full-stack environment planned for Phase 4.2 |
+| `compose.yaml` | Local Compose environment for PostgreSQL and the full application stack | PostgreSQL, backend, idempotent demo-data seed, BFF, and frontend services with health checks and readiness ordering |
 | `.env.example` | Non-secret placeholders for local PostgreSQL settings | Present; copy to ignored `.env` and replace the credential placeholders |
 | `.github/skills/` | Repository-specific Copilot skills | Present |
 | `specs/` | Mission, technology choices, roadmap, and feature specifications | Present |
@@ -81,9 +81,9 @@ Flyway migrations under `backend/src/main/resources/db/migration/` version the b
 
 ## Local database setup
 
-The root `compose.yaml` currently defines only a PostgreSQL 17.6 Alpine container, exposed on host port `5432`, with a persistent named volume. Its `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` settings are required and supplied from the ignored root `.env` file; `.env.example` contains placeholders only. `POSTGRES_HOST` and `POSTGRES_PORT` document the host-side connection (`localhost:5432`). The backend's `application-local.properties` maps these settings into its datasource when the `local` profile is active. The default backend profile excludes datasource auto-configuration, preserving standalone startup without PostgreSQL.
+The root `compose.yaml` defines PostgreSQL 17.6 Alpine with a persistent named volume and the frontend, BFF, backend, and demo-data seeder. Its `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` settings are required and supplied from the ignored root `.env` file; `.env.example` contains placeholders only. `POSTGRES_PORT` sets the host-side PostgreSQL port (default `5432`); the backend uses the Compose service name `postgres` and its internal port. The backend's `application-local.properties` maps its datasource settings when the `local` profile is active. The default backend profile excludes datasource auto-configuration, preserving standalone startup without PostgreSQL.
 
-When the backend starts with the `local` profile, Flyway applies its schema migrations and seeds the supported console catalog in the configured database. `docker compose down` stops the service while preserving local data in its volume; `docker compose down --volumes` removes that volume and permanently deletes the data. This database-only service is separate from the planned Phase 4.2 Compose environment, which will add the frontend, BFF, backend, and sample data.
+When the backend starts with the `local` profile, Flyway applies its schema migrations and seeds the supported console catalog. After the backend is healthy, the Compose `demo-data` service applies the separate idempotent `database/demo-games.sql` seed. Nginx serves the built frontend and proxies browser `/api` requests to the BFF; the BFF uses the Compose service name `backend`, and the backend uses `postgres`. `docker compose down` stops the stack while preserving local data in its volume; `docker compose down --volumes` removes that volume and permanently deletes the data. The Compose services are for local development and demonstration, not production deployment.
 
 Verification is scoped to the behavior being changed:
 

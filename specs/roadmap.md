@@ -121,7 +121,7 @@ Implement the core collection workflow and repository publication readiness, the
 - **Outcome:** An opt-in local mock mode runs the frontend against MSW handlers that follow the API contract, without the BFF, backend, or Docker.
 - **Completion check:** A documented command starts the frontend in mock mode and the main collection flows work; mocks are excluded from production builds and shared with the Jest tests.
 
-### 6.2 Run the BFF on mocked backend responses without Docker
+### 6.2 Run the BFF on mocked backend responses without Docker [Complete]
 
 - **Outcome:** An opt-in configuration lets the BFF serve requests from mocked backend responses that follow the API contract, while its validation and error mapping still run.
 - **Completion check:** A documented command starts the BFF in mock mode without the backend or Docker, and tests verify success and error responses.

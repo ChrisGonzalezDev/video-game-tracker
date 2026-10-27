@@ -1,6 +1,6 @@
 # Roadmap
 
-Implement the core collection workflow and repository publication readiness before optional improvements. Phases follow the README's foundation, backend, frontend, BFF, and full-stack integration sequence. Each phase has a focused outcome and a completion check.
+Implement the core collection workflow and repository publication readiness, then Docker-free local mock modes, before optional improvements. Phases follow the README's foundation, backend, frontend, BFF, and full-stack integration sequence. Each phase has a focused outcome and a completion check.
 
 ## Phase 0 — Foundation
 
@@ -114,21 +114,38 @@ Implement the core collection workflow and repository publication readiness befo
 - **Outcome:** The README accurately describes the current project status, implemented capabilities, and planned work.
 - **Completion check:** README status, feature descriptions, roadmap references, and setup guidance agree with the current repository.
 
-## Phase 6 — Optional CI quality gates
+## Phase 6 — Local mock modes
 
-### 6.1 Enforce continuous integration quality gates
+### 6.1 Run the frontend on MSW mocks without Docker
+
+- **Outcome:** An opt-in local mock mode runs the frontend against MSW handlers that follow the API contract, without the BFF, backend, or Docker.
+- **Completion check:** A documented command starts the frontend in mock mode and the main collection flows work; mocks are excluded from production builds and shared with the Jest tests.
+
+### 6.2 Run the BFF on mocked backend responses without Docker
+
+- **Outcome:** An opt-in configuration lets the BFF serve requests from mocked backend responses that follow the API contract, while its validation and error mapping still run.
+- **Completion check:** A documented command starts the BFF in mock mode without the backend or Docker, and tests verify success and error responses.
+
+### 6.3 Run the backend on an in-memory mock profile without Docker
+
+- **Outcome:** A Spring `mock` profile replaces PostgreSQL persistence with a seeded in-memory repository, while the real controllers, validation, and error handling still run; the default profile is unaffected.
+- **Completion check:** A documented command starts the backend in the mock profile without PostgreSQL or Docker, and tests verify its behavior matches the API contract and the default persistence behavior.
+
+## Phase 7 — Optional CI quality gates
+
+### 7.1 Enforce continuous integration quality gates
 
 - **Outcome:** GitHub Actions runs the relevant build, test, contract, and container checks for pushes and pull requests.
 - **Completion check:** Required checks pass on the main branch, and merging is gated on the configured required checks.
 
-## Phase 7 — Optional AI-assisted entry
+## Phase 8 — Optional AI-assisted entry
 
-### 7.1 Decide AI provider and integration boundaries
+### 8.1 Decide AI provider and integration boundaries
 
 - **Outcome:** The provider, configuration requirements, and failure behavior are decided before implementation.
 - **Completion check:** The selected approach is documented, including how secrets are configured and how provider failures are surfaced.
 
-### 7.2 Propose and validate game metadata
+### 8.2 Propose and validate game metadata
 
 - **Outcome:** A user can request metadata suggestions from a title or description, review and edit the proposal, and explicitly confirm before saving.
 - **Completion check:** Tests verify suggestions are validated, remain editable, are never saved without user confirmation, and degrade clearly when the provider is unavailable.

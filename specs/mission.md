@@ -21,7 +21,7 @@ Give an individual video game collector a centralized place to catalog their col
 - Make the collection easy to explore through title or keyword search, filters, sorting, and pagination.
 - Provide a clear, responsive interface and predictable API behavior.
 - Demonstrate maintainable, testable software across the frontend, BFF, backend, and database.
-- Make local development and full-stack demonstrations reproducible.
+- Make local development and full-stack demonstrations reproducible, including Docker-free mock modes.
 - Treat future AI-generated game metadata as a proposal for user review and confirmation, not as authoritative data.
 
 ## Guiding principles and non-goals

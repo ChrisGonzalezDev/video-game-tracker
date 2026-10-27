@@ -8,7 +8,7 @@ The following choices and responsibilities are confirmed by the project README a
 | --- | --- | --- |
 | Frontend | React, TypeScript, MUI | Single-page application, user interface, and reusable, feature-oriented components |
 | Client-side data | TanStack Query | API request lifecycle, client-side caching, mutations, and query invalidation |
-| Frontend tests | Jest, MSW | Unit and component tests, including mocked API interactions |
+| Frontend tests and local mocks | Jest, MSW | Unit and component tests, plus an opt-in Docker-free mock mode (planned) using mocked API interactions |
 | Backend-for-frontend (BFF) | Node.js, Express | Frontend-facing HTTP API, request orchestration, downstream client, and error mapping |
 | Application backend | Java, Spring Boot | Versioned REST endpoints, validation, application/domain rules, and persistence access |
 | Backend tests | JUnit, Spring Boot Test | Unit and integration tests for backend behavior |
@@ -41,6 +41,7 @@ Browser / React SPA -> Express BFF -> Spring Boot REST API -> PostgreSQL
 - Test behavior at appropriate scopes: unit/component, integration, contract, and end-to-end.
 - Use migrations and reproducible seed/demo data for database setup.
 - Use environment-based configuration and keep secrets out of source control.
+- Support opt-in mock modes so each module runs without Docker: MSW for the frontend, mocked backend responses for the BFF, and an in-memory repository under a Spring `mock` profile for the backend. Mock modes must not affect default or production-style builds (planned).
 - Use Docker Compose for local development and demonstration; do not treat that setup as production deployment configuration.
 - Preserve accessible and responsive UI behavior.
 - Run relevant automated build and test quality checks in GitHub Actions.

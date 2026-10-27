@@ -116,7 +116,7 @@ Implement the core collection workflow and repository publication readiness, the
 
 ## Phase 6 — Local mock modes
 
-### 6.1 Run the frontend on MSW mocks without Docker
+### 6.1 Run the frontend on MSW mocks without Docker [Complete]
 
 - **Outcome:** An opt-in local mock mode runs the frontend against MSW handlers that follow the API contract, without the BFF, backend, or Docker.
 - **Completion check:** A documented command starts the frontend in mock mode and the main collection flows work; mocks are excluded from production builds and shared with the Jest tests.

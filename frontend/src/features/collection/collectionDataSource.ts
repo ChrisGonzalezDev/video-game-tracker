@@ -12,6 +12,7 @@ export interface CollectionQuery {
   sort?: CollectionSortField;
   direction?: CollectionSortDirection;
   page?: number;
+  size?: number;
 }
 
 export interface CollectionDataSource {
@@ -122,6 +123,12 @@ export function createFixtureCollectionDataSource(
       ) {
         throw new RangeError("page must be a non-negative whole number.");
       }
+      if (
+        query.size != null &&
+        (!Number.isInteger(query.size) || query.size < 1 || query.size > 100)
+      ) {
+        throw new RangeError("size must be a whole number between 1 and 100.");
+      }
 
       const keyword = query.keyword?.trim().toLowerCase();
       const selectedConsoles = new Set(query.consoles ?? []);
@@ -171,7 +178,7 @@ export function createFixtureCollectionDataSource(
           ? left.id - right.id
           : comparison * directionMultiplier;
       });
-      const size = 20;
+      const size = query.size ?? 20;
       const page = query.page ?? 0;
       const totalItems = sorted.length;
       const totalPages = Math.ceil(totalItems / size);

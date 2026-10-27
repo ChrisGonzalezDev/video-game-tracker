@@ -109,7 +109,7 @@ Implement the core collection workflow and repository publication readiness befo
 - **Outcome:** The repository includes a license that reflects the maintainer's intended permissions and is compatible with included assets and data.
 - **Completion check:** A license is selected, added to the repository, and referenced from the README.
 
-### 5.2 Bring project status and README documentation up to date
+### 5.2 Bring project status and README documentation up to date [Complete]
 
 - **Outcome:** The README accurately describes the current project status, implemented capabilities, and planned work.
 - **Completion check:** README status, feature descriptions, roadmap references, and setup guidance agree with the current repository.

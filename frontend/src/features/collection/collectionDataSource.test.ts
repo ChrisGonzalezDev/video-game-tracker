@@ -229,5 +229,23 @@ describe("fixture collection data source", () => {
       totalItems: 25,
       totalPages: 2,
     });
+
+  });
+
+  it("supports API page sizes from one through one hundred", async () => {
+    const source = createFixtureCollectionDataSource(pageFromGames(queryGames));
+
+    await expect(
+      source.getCollection({ page: 1, size: 2 }),
+    ).resolves.toMatchObject({
+      items: [{ id: 4 }, { id: 3 }],
+      page: 1,
+      size: 2,
+      totalItems: 4,
+      totalPages: 2,
+    });
+    await expect(source.getCollection({ size: 101 })).rejects.toThrow(
+      "size must be a whole number between 1 and 100.",
+    );
   });
 });

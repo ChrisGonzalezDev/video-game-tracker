@@ -92,7 +92,17 @@ Do not add `--volumes` unless you intend to permanently delete the local databas
 
 ### Frontend
 
-From `frontend/`, run `npm install` and `npm run dev` to open the collection view at `http://localhost:3000`. The Vite development server forwards relative `/api` requests to the BFF at `http://localhost:3001`; start the BFF separately as described below. The frontend uses the BFF for collection search, filters, sorting, pagination, game details, supported consoles, and game create/edit/delete operations. TanStack Query caches server state and refreshes collection data after successful mutations. The in-memory fixture data source remains available for isolated UI tests. Run `npm run build` to verify the production bundle and `npm test` to run the frontend Jest and MSW tests.
+From `frontend/`, run `npm install` and `npm run dev` to open the collection view at `http://localhost:3000`. The Vite development server forwards relative `/api` requests to the BFF at `http://localhost:3001`; start the BFF separately as described below. The frontend uses the BFF for collection search, filters, sorting, pagination, game details, supported consoles, and game create/edit/delete operations. TanStack Query caches server state and refreshes collection data after successful mutations.
+
+To run the frontend without Docker, the BFF, or the backend, use the opt-in browser mock mode:
+
+```powershell
+npm run dev:mock
+```
+
+MSW intercepts the same `/api/v1` requests using the fixtures and handlers shared with Jest tests. The mock collection supports browsing, search, filters, sorting, pagination, game details, supported consoles, and game create/edit/delete operations. Changes remain in memory for the current page session and reset when the page reloads. The regular `npm run dev` command continues to proxy API requests to the BFF. Mock mode is development-only; the browser worker and mock handlers are excluded from the production build.
+
+Run `npm run build` to verify the production bundle and `npm test` to run the frontend Jest and MSW tests.
 
 ### BFF
 

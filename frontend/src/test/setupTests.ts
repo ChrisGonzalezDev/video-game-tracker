@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom";
+import { createMockHandlers } from "../mocks/handlers";
 import { server } from "./testServer";
 
 beforeAll(() => {
@@ -6,7 +7,7 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  server.resetHandlers();
+  server.resetHandlers(...createMockHandlers());
 });
 
 afterAll(() => {

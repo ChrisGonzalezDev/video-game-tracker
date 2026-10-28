@@ -41,7 +41,7 @@ Browser / React SPA -> Express BFF -> Spring Boot REST API -> PostgreSQL
 - Test behavior at appropriate scopes: unit/component, integration, contract, and end-to-end.
 - Use migrations and reproducible seed/demo data for database setup.
 - Use environment-based configuration and keep secrets out of source control.
-- Support opt-in mock modes so each module can run without Docker: the frontend's MSW mode is implemented; mocked backend responses for the BFF and an in-memory repository under a Spring `mock` profile for the backend remain planned. Mock modes must not affect default or production-style builds.
+- Support opt-in mock modes so each module can run without Docker: the frontend's MSW mode and the BFF's fixed-response mock mode are implemented; an in-memory repository under a Spring `mock` profile for the backend remains planned. Mock modes must not affect default or production-style builds.
 - Use Docker Compose for local development and demonstration; do not treat that setup as production deployment configuration.
 - Preserve accessible and responsive UI behavior.
 - Run relevant automated build and test quality checks in GitHub Actions.

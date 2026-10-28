@@ -113,6 +113,21 @@ forwards the game and console routes under `/api/v1` to the Spring Boot API:
 `PUT /api/v1/games/{id}`, `DELETE /api/v1/games/{id}`, and
 `GET /api/v1/consoles`.
 
+To run the BFF without the backend or Docker, start its opt-in mock mode from
+`bff/`:
+
+```powershell
+npm run dev:mock
+```
+
+The mock mode uses fixed, contract-shaped responses for the game collection,
+game operations, and supported consoles. Create, replace, and delete requests
+return representative responses but do not change the fixture data; repeated
+requests and restarts return the same mock data. Requests still use the BFF's
+normal validation and response/error mapping. This mode is for local
+development and demonstration, not production. The ordinary `npm run dev` and
+`npm start` commands continue to use the live backend client.
+
 The backend API base URL is configurable with `BACKEND_API_URL` and defaults
 to `http://localhost:8080/api/v1`. For example, set it before starting the BFF
 when the backend uses a different host or port. Build with `npm run build` and
